@@ -609,6 +609,21 @@
     .mode-bar a.active.bbps   .mode-dot { background: #ffb700; }
     .mode-bar a.active.slice3 .mode-dot { background: #ff5fdc; }
 
+    body.mobile-view {
+      background: #000;
+    }
+    body.mobile-view .mode-bar {
+      display: none;
+    }
+    body.mobile-view .phone-scale-wrapper {
+      transform: none !important;
+    }
+    body.mobile-view .phone {
+      border-radius: 0 !important;
+      width: 100vw !important;
+      height: 100dvh !important;
+    }
+
     .phone {
       width: 360px; height: 780px;
       border-radius: 44px;
@@ -1889,6 +1904,13 @@
   </style>
 </head>
 <body>
+
+<!-- Mobile view detection -->
+<script>
+  if (new URLSearchParams(location.search).has('mobile')) {
+    document.body.classList.add('mobile-view');
+  }
+</script>
 
 <!-- Mode toggle (top-left, outside phone) -->
 <div class="mode-bar">
