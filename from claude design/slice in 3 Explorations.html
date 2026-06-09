@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>slice in 3 · 3 experiences</title>
+<link rel="stylesheet" href="slice-in-3/shared.css" />
+<style>
+  html, body { height: 100%; margin: 0; }
+  #root { height: 100vh; }
+  .frame { width: 402px; height: 874px; border: 0; display: block; background: #11131a; border-radius: 38px; }
+  .note { font-family: var(--font); }
+  .note h3 { font-size: 15px; margin: 0 0 6px; font-weight: 600; letter-spacing: .01em; }
+  .note p { font-size: 13px; line-height: 1.5; margin: 0 0 8px; color: #5a4a2a; }
+  .note b { font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="slice-in-3/design-canvas.jsx"></script>
+<script src="slice-in-3/slice-pie.jsx"></script>
+
+<script type="text/babel">
+const Frame = ({ src }) => <iframe className="frame" src={src} title={src} scrolling="no"></iframe>;
+
+function Gallery() {
+  return (
+    <DesignCanvas>
+      <DCSection id="options" title="slice in 3 — a living explainer" subtitle="Three creative directions on Slice DLS 2.0 · headphones ₹9,000 · tap / drag / scroll the phones to explore">
+        <DCArtboard id="brief" label="The brief, my read" width={360} height={874}>
+          <div className="note" style={{ height: "100%", background: "#fff", padding: "34px 30px", display: "flex", flexDirection: "column" }}>
+            <div style={{ marginBottom: 20 }}>
+              <SlicePie size={54} idPrefix="brf" />
+            </div>
+            <h3 style={{ fontSize: 19, color: "#11131a" }}>From a static list to something you feel</h3>
+            <p style={{ fontSize: 13.5 }}>Today's explainer reads like a settings page. The goal here is to make the value prop <b>land</b> — split it, at zero extra cost, anywhere UPI works.</p>
+            <h3 style={{ fontSize: 15, marginTop: 14, color: "#11131a" }}>One shared system</h3>
+            <p style={{ fontSize: 13.5 }}>The slice <b>"pie"</b> rebuilt as an animatable SVG, Rubik type, Valentino magenta reserved only for the action, the grain-gradient texture, sentence-case copy.</p>
+            <h3 style={{ fontSize: 15, marginTop: 14, color: "#11131a" }}>"No-cost", kept honest</h3>
+            <p style={{ fontSize: 13.5 }}><b>3 × ₹3,000 = ₹9,000.</b> No interest, no GST, no processing fee. Every direction ends on <b>Got it</b>.</p>
+            <div style={{ flex: 1 }}></div>
+            <div style={{ borderTop: "1px solid rgba(0,0,0,.08)", paddingTop: 14 }}>
+              <p style={{ fontSize: 12.5, color: "#8a7a55", margin: 0 }}><b>1 · Story</b> — quiet, tap-through narrative.<br /><b>2 · Scroll</b> — bold scroll-driven cinema.<br /><b>3 · Slice</b> — tactile, in the real pay flow.</p>
+            </div>
+          </div>
+        </DCArtboard>
+        <DCArtboard id="story" label="1 · Story mode — tap-through narrative" width={402} height={874}>
+          <Frame src="slice-in-3/approach-1-story.html" />
+        </DCArtboard>
+        <DCArtboard id="scroll" label="2 · Scrollytelling — scroll-driven cinematic" width={402} height={874}>
+          <Frame src="slice-in-3/approach-2-scroll.html" />
+        </DCArtboard>
+        <DCArtboard id="slice" label="3 · Slice it — tactile drag-to-slice flow" width={402} height={874}>
+          <Frame src="slice-in-3/approach-3-slice.html" />
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Gallery />);
+</script>
+</body>
+</html>

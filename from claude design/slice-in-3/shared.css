@@ -1,0 +1,54 @@
+/* slice in 3 — shared foundations (Slice DLS 2.0) */
+@font-face {
+  font-family: "Rubik";
+  src: url("../_ds/slice-dls-2-0-real-1c8c5cb1-2a01-43ba-bc13-179a090aeda0/fonts/Rubik-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --brand: #D30AD7;
+  --brand-600: #A008A3;
+  --brand-300: #E362E5;
+  --brand-subtle: rgba(211, 10, 215, 0.08);
+  --blue: #2B6ACF;
+  --blue-300: #5E8EDB;
+  --green: #00A63E;
+  --t1: rgba(0, 0, 0, 0.9);
+  --t2: rgba(0, 0, 0, 0.7);
+  --t3: rgba(0, 0, 0, 0.5);
+  --bg2: #F6F9FC;
+  --bg3: #F0F4F7;
+  --border: rgba(0, 0, 0, 0.06);
+  --shadow-card: 0 2px 32px rgba(0, 0, 0, 0.05);
+  --font: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Film-grain overlay used on the brand gradient illustrations */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  border-radius: inherit;
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}

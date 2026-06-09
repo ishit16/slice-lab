@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>slice in 3 · Slice it</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+  html, body { height: 100%; background: #11131a; }
+  #root { height: 100%; display: flex; align-items: center; justify-content: center; }
+  @keyframes sp-spin { to { transform: rotate(360deg); } }
+  @keyframes popIn { from { opacity: 0; transform: scale(.85) translateY(8px); } to { opacity: 1; transform: none; } }
+  .big { font-weight: 500; letter-spacing: -0.03em; line-height: .96; }
+  .eyebrow { font-size: 12px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; }
+  .noselect { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+  (function () {
+    function guard() {
+      if (document.timeline && document.timeline.currentTime === 0) {
+        var f = function () { (document.getAnimations ? document.getAnimations() : []).forEach(function (a) { try { a.finish(); } catch (e) {} }); };
+        f(); new MutationObserver(f).observe(document.documentElement, { subtree: true, childList: true, attributes: true });
+      }
+    }
+    window.addEventListener("load", function () { setTimeout(guard, 1400); });
+  })();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="slice-pie.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+
+<script type="text/babel">
+const { useState, useRef, useEffect, useCallback } = React;
+const BRAND = "#D30AD7";
+const inr = (n) => "₹" + n.toLocaleString("en-IN");
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function fmtDate(d) {
+  return d.getDate() + " " + d.toLocaleString("en-IN", { month: "short" });
+}
+function schedule() {
+  const now = new Date();
+  return [0, 1, 2].map((m) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + m, now.getDate());
+    return m === 0 ? "today" : fmtDate(d);
+  });
+}
+
+/* ─────────── the draggable blade ─────────── */
+function SliceTrack({ value, onChange, onComplete }) {
+  const track = useRef(null);
+  const [drag, setDrag] = useState(false);
+
+  const setFromX = useCallback((clientX) => {
+    const r = track.current.getBoundingClientRect();
+    onChange(clamp((clientX - r.left) / r.width, 0, 1));
+  }, [onChange]);
+
+  useEffect(() => {
+    if (!drag) return;
+    const move = (e) => setFromX(e.touches ? e.touches[0].clientX : e.clientX);
+    const up = () => {
+      setDrag(false);
+      // commit if dragged most of the way, else snap back
+      if (track.current && track.current.__v >= 0.82) onComplete();
+      else onChange(0);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+  }, [drag, setFromX, onChange, onComplete]);
+
+  if (track.current) track.current.__v = value;
+
+  return (
+    <div ref={track} className="noselect" style={{ position: "relative", height: 60, borderRadius: 999, background: "#fff", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", overflow: "hidden" }}>
+      {/* fill */}
+      <div style={{ position: "absolute", inset: 0, width: (value * 100) + "%", background: "var(--brand-subtle)", transition: drag ? "none" : "width .35s cubic-bezier(.22,1,.36,1)" }}></div>
+      {/* label */}
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: value > 0.5 ? BRAND : "var(--t3)", fontSize: 14, fontWeight: 500, pointerEvents: "none", whiteSpace: "nowrap" }}>
+        <span>{value >= 0.82 ? "release to slice" : "drag to slice in 3"}</span>
+      </div>
+      {/* blade handle */}
+      <div
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture?.(e.pointerId); setDrag(true); }}
+        style={{
+          position: "absolute", top: 5, bottom: 5, left: `calc(${value * 100}% )`,
+          transform: "translateX(-50%)", width: 50, borderRadius: 999, background: BRAND,
+          display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab",
+          boxShadow: "0 4px 14px rgba(211,10,215,.4)", touchAction: "none",
+          transition: drag ? "none" : "left .35s cubic-bezier(.22,1,.36,1)",
+          marginLeft: value < 0.04 ? 5 : value > 0.96 ? -5 : 0,
+        }}>
+        {/* knife glyph */}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M4 16 L15 5 c2-2 5 1 3 3 L11 16 Z" fill="#fff" opacity="0.95"/>
+          <path d="M4 16 h7" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────── installment row ─────────── */
+function InstallRow({ when, amount, p, idx, paid }) {
+  // reveal as the blade passes its threshold
+  const th = 0.18 + idx * 0.26;
+  const t = clamp((p - th) / 0.2, 0, 1);
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 13, padding: "15px 16px",
+      borderRadius: 16, background: "#fff", border: "1px solid var(--border)", boxShadow: "var(--shadow-card)",
+      transform: `translateY(${(1 - t) * 16}px)`, opacity: t,
+    }}>
+      <div style={{ width: 36, height: 36, borderRadius: 999, background: idx === 0 ? BRAND : "var(--brand-subtle)", color: idx === 0 ? "#fff" : BRAND, display: "flex", alignItems: "center", justifyContent: "center", font: "500 14px var(--font)", flex: "none" }}>{idx + 1}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 500, whiteSpace: "nowrap" }}>{when}</div>
+        <div style={{ fontSize: 12, color: "var(--t3)", marginTop: 1 }}>{idx === 0 ? "first installment" : "auto-debit"}</div>
+      </div>
+      <div className="tabular" style={{ fontSize: 19, fontWeight: 500 }}>{inr(amount)}</div>
+    </div>
+  );
+}
+
+/* ─────────── screens ─────────── */
+function PayFlow() {
+  const [p, setP] = useState(0);          // blade progress
+  const [stage, setStage] = useState("slice"); // slice → review → done
+  const dates = schedule();
+
+  if (stage === "done") {
+    return (
+      <div style={{ position: "absolute", inset: 0, background: "var(--bg3)", display: "flex", flexDirection: "column", padding: "120px 26px 40px" }}>
+        <div style={{ alignSelf: "center", animation: "popIn .5s cubic-bezier(.34,1.56,.64,1) both" }}>
+          <div style={{ width: 84, height: 84, borderRadius: 999, background: "rgba(0,166,62,.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="40" height="40" viewBox="0 0 40 40"><path d="M11 21l6 6 13-15" stroke="#00A63E" strokeWidth="3.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+        </div>
+        <div className="big" style={{ fontSize: 30, textAlign: "center", marginTop: 22 }}>sliced.</div>
+        <div style={{ textAlign: "center", color: "var(--t2)", fontSize: 16, marginTop: 8 }}>{inr(9000)} to boAt, paid in 3.</div>
+        <div style={{ marginTop: 28, background: "#fff", borderRadius: 18, border: "1px solid var(--border)", boxShadow: "var(--shadow-card)", overflow: "hidden" }}>
+          {dates.map((w, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 16px", borderTop: i ? "1px solid var(--border)" : "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 13, color: "var(--t3)", width: 22 }}>{i + 1}</span>
+                <span style={{ fontSize: 15, fontWeight: 500, whiteSpace: "nowrap" }}>{w}</span>
+                {i === 0 && <span style={{ fontSize: 11, fontWeight: 500, color: "var(--green)", background: "rgba(0,166,62,.1)", padding: "3px 8px", borderRadius: 999 }}>paid</span>}
+              </div>
+              <span className="tabular" style={{ fontSize: 16, fontWeight: 500 }}>{inr(3000)}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ flex: 1 }}></div>
+        <button onClick={() => { setStage("slice"); setP(0); }} style={{ background: BRAND, color: "#fff", border: 0, borderRadius: 999, font: "500 16px var(--font)", padding: "17px 0", cursor: "pointer", letterSpacing: ".02em" }}>Got it</button>
+      </div>
+    );
+  }
+
+  const sliced = stage === "review";
+  const pp = sliced ? 1 : p;
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: "var(--bg3)", display: "flex", flexDirection: "column", padding: "104px 26px 34px" }}>
+      {/* merchant header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 13, background: "#11131a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", font: "500 16px var(--font)", flex: "none" }}>bA</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 500 }}>boAt Lifestyle</div>
+          <div style={{ fontSize: 12, color: "var(--t3)" }}>UPI · paying now</div>
+        </div>
+        <SlicePie size={34} split={pp} idPrefix="hp" />
+      </div>
+
+      {/* the amount that gets sliced */}
+      <div style={{ marginTop: 26, textAlign: "center", position: "relative" }}>
+        <div className="eyebrow" style={{ color: "var(--t3)" }}>amount</div>
+        <div className="big tabular" style={{ fontSize: 64, marginTop: 6, color: BRAND, opacity: 1 - pp * 0.55 }}>{inr(9000)}</div>
+        <div style={{ fontSize: 13, color: "var(--t2)", marginTop: 6 }}>
+          {pp > 0.05 ? <span>becomes <b style={{ color: "var(--t1)" }}>3 × {inr(3000)}</b> · no cost</span> : "split it into 3 — at zero extra cost"}
+        </div>
+      </div>
+
+      {/* installments fan out */}
+      <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 10 }}>
+        {dates.map((w, i) => <InstallRow key={i} when={w} amount={3000} p={pp} idx={i} />)}
+      </div>
+
+      <div style={{ flex: 1 }}></div>
+
+      {sliced ? (
+        <div style={{ animation: "popIn .35s ease both" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--t3)", padding: "0 4px 12px" }}>
+            <span>total you repay</span>
+            <span className="tabular" style={{ fontSize: 15, fontWeight: 500, color: "var(--t1)" }}>{inr(9000)} · no interest, no GST, no fee</span>
+          </div>
+          <button onClick={() => setStage("done")} style={{ width: "100%", background: BRAND, color: "#fff", border: 0, borderRadius: 999, font: "500 16px var(--font)", padding: "17px 0", cursor: "pointer", letterSpacing: ".02em" }}>Confirm · pay {inr(3000)} now</button>
+          <button onClick={() => { setStage("slice"); setP(0); }} style={{ width: "100%", marginTop: 6, background: "transparent", border: 0, color: "var(--t3)", font: "500 14px var(--font)", padding: "10px 0", cursor: "pointer" }}>pay full amount instead</button>
+        </div>
+      ) : (
+        <div>
+          <SliceTrack value={p} onChange={setP} onComplete={() => { setP(1); setStage("review"); }} />
+          <div style={{ textAlign: "center", marginTop: 12, fontSize: 11, color: "var(--t3)" }}>on eligible spends above {inr(2000)} · see MITC</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <IOSDevice>
+      <div style={{ position: "absolute", inset: 0 }}><PayFlow /></div>
+    </IOSDevice>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

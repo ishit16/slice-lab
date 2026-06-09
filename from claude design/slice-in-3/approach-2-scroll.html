@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>slice in 3 · Scroll</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+  html, body { height: 100%; background: #11131a; }
+  #root { height: 100%; display: flex; align-items: center; justify-content: center; }
+  @keyframes sp-spin { to { transform: rotate(360deg); } }
+  .scroller { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+  .scroller::-webkit-scrollbar { display: none; }
+  .big { font-weight: 500; letter-spacing: -0.035em; line-height: .92; }
+  .eyebrow { font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+  (function () {
+    function guard() {
+      if (document.timeline && document.timeline.currentTime === 0) {
+        var f = function () { (document.getAnimations ? document.getAnimations() : []).forEach(function (a) { try { a.finish(); } catch (e) {} }); };
+        f(); new MutationObserver(f).observe(document.documentElement, { subtree: true, childList: true, attributes: true });
+      }
+    }
+    window.addEventListener("load", function () { setTimeout(guard, 1400); });
+  })();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="slice-pie.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+const BRAND = "#D30AD7";
+const inr = (n) => "₹" + n.toLocaleString("en-IN");
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+// progress within a [start,end] window, clamped 0..1
+const win = (p, s, e) => clamp((p - s) / (e - s), 0, 1);
+// fade in over [s,s+f], hold, fade out over [e-f,e]
+const band = (p, s, e, f = 0.05) => Math.min(win(p, s, s + f), 1 - win(p, e - f, e));
+const ease = (t) => 1 - Math.pow(1 - t, 3);
+
+function Scene({ children, opacity, z = 1, style }) {
+  return (
+    <div style={{
+      position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+      justifyContent: "center", padding: "0 30px", opacity, zIndex: z,
+      pointerEvents: opacity > 0.5 ? "auto" : "none", ...style,
+    }}>{children}</div>
+  );
+}
+
+function Film({ onDone }) {
+  const ref = useRef(null);
+  const [p, setP] = useState(0);
+  const raf = useRef(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    const onScroll = () => {
+      const max = el.scrollHeight - el.clientHeight;
+      setP(max > 0 ? el.scrollTop / max : 0);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // ---- scene math ----
+  const heroOp = 1 - win(p, 0.13, 0.20);
+  const heroScale = lerp(1, 0.7, ease(win(p, 0.0, 0.20)));
+
+  const splitOp = band(p, 0.16, 0.42);
+  const splitT = ease(win(p, 0.16, 0.40)); // 0→1 cards part & pie explodes
+
+  const costOp = band(p, 0.40, 0.64);
+  const costT = ease(win(p, 0.40, 0.58));
+
+  const howOp = band(p, 0.62, 0.82);
+  const endOp = win(p, 0.80, 0.92);
+
+  // background crossfades white → magenta (cost) → white
+  const magenta = band(p, 0.38, 0.66, 0.08);
+  const bg = `rgb(${lerp(240, 211, magenta) | 0},${lerp(244, 10, magenta) | 0},${lerp(247, 215, magenta) | 0})`;
+
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      <div ref={ref} className="scroller" style={{ background: bg, transition: "background .1s linear" }}>
+        {/* pinned stage */}
+        <div style={{ position: "sticky", top: 0, height: "100%", overflow: "hidden" }}>
+
+        {/* HERO */}
+        <Scene opacity={heroOp} z={2}>
+          <div style={{ transform: `scale(${heroScale})`, transformOrigin: "left center" }}>
+            <div className="eyebrow" style={{ color: BRAND }}>the headphones you keep opening</div>
+            <div className="big tabular" style={{ fontSize: 104, marginTop: 14 }}>{inr(9000)}</div>
+            <div style={{ fontSize: 20, color: "var(--t2)", marginTop: 18 }}>that's a lot to pay in one go.</div>
+          </div>
+        </Scene>
+
+        {/* SPLIT — three 3,000 part outward, pie explodes */}
+        <Scene opacity={splitOp} z={3}>
+          <div style={{ alignSelf: "center", marginBottom: 22 }}>
+            <SlicePie size={120} split={splitT} idPrefix="sp" />
+          </div>
+          <div className="eyebrow" style={{ color: BRAND, textAlign: "center" }}>sliced in 3</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 18 }}>
+            {["this month", "next month", "month after"].map((m, i) => {
+              const dir = i === 0 ? -1 : i === 2 ? 1 : 0;
+              return (
+                <div key={i} style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "baseline",
+                  padding: "15px 18px", borderRadius: 16, background: "#fff",
+                  boxShadow: "var(--shadow-card)", border: "1px solid var(--border)",
+                  transform: `translateX(${lerp(0, dir * 14, 1 - splitT)}px) scale(${lerp(0.9, 1, splitT)})`,
+                  opacity: splitT,
+                }}>
+                  <span style={{ fontSize: 14, color: "var(--t3)" }}>{m}</span>
+                  <span className="tabular" style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-.02em" }}>{inr(3000)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Scene>
+
+        {/* NO-COST — on magenta */}
+        <Scene opacity={costOp} z={4}>
+          <div className="eyebrow" style={{ color: "rgba(255,255,255,.85)" }}>and the cost?</div>
+          <div className="big" style={{ fontSize: 40, color: "#fff", marginTop: 14, lineHeight: 1.05 }}>
+            zero. <span style={{ color: "rgba(255,255,255,.7)" }}>nothing extra.</span>
+          </div>
+          <div style={{ marginTop: 34, color: "#fff" }}>
+            <div className="tabular" style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 22, fontWeight: 500, opacity: costT }}>
+              {inr(3000)} <span style={{ opacity: .6 }}>+</span> {inr(3000)} <span style={{ opacity: .6 }}>+</span> {inr(3000)}
+            </div>
+            <div style={{ height: 1, background: "rgba(255,255,255,.3)", margin: "16px 0", transform: `scaleX(${costT})`, transformOrigin: "left" }}></div>
+            <div className="tabular" style={{ fontSize: 30, fontWeight: 500 }}>= {inr(9000)}</div>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 28, flexWrap: "wrap" }}>
+            {["no interest", "no GST", "no processing fee"].map((t) => (
+              <span key={t} style={{ whiteSpace: "nowrap", fontSize: 13, fontWeight: 500, color: "#fff", background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.28)", padding: "8px 13px", borderRadius: 999 }}>{t}</span>
+            ))}
+          </div>
+        </Scene>
+
+        {/* HOW */}
+        <Scene opacity={howOp} z={3}>
+          <div className="eyebrow" style={{ color: "var(--t3)" }}>how to use it</div>
+          <div className="big" style={{ fontSize: 30, marginTop: 14, lineHeight: 1.15 }}>
+            pay by UPI.<br />pick <span style={{ color: BRAND }}>slice in 3.</span> done.
+          </div>
+          <div style={{ marginTop: 26, background: "#fff", borderRadius: 20, boxShadow: "var(--shadow-card)", padding: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 13, color: "var(--t3)" }}>
+              <span>paying boAt</span><span className="tabular" style={{ fontWeight: 500, color: "var(--t1)" }}>{inr(9000)}</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "13px 14px", borderRadius: 13, border: "1.5px solid " + BRAND, background: "var(--brand-subtle)" }}>
+              <span style={{ width: 18, height: 18, borderRadius: 999, border: "2px solid " + BRAND, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ width: 9, height: 9, borderRadius: 999, background: BRAND }}></span>
+              </span>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 500, color: BRAND }}>slice in 3</div>
+                <div style={{ fontSize: 12, color: "var(--t3)" }}>3 × {inr(3000)} · no cost</div>
+              </div>
+            </div>
+          </div>
+        </Scene>
+
+        {/* END */}
+        <Scene opacity={endOp} z={5} style={{ alignItems: "center", textAlign: "center" }}>
+          <SlicePie size={104} spin idPrefix="e" />
+          <div className="big tabular" style={{ fontSize: 50, marginTop: 26 }}>65M+</div>
+          <div style={{ fontSize: 18, color: "var(--t2)", marginTop: 10, maxWidth: 250 }}>merchants. everywhere UPI works, on spends above {inr(2000)}.</div>
+          <button onClick={onDone} style={{ marginTop: 34, background: BRAND, color: "#fff", border: 0, borderRadius: 999, font: "500 16px var(--font)", padding: "17px 0", width: 230, cursor: "pointer", letterSpacing: ".02em" }}>Got it</button>
+          <div style={{ marginTop: 14, fontSize: 11, color: "var(--t3)" }}>eligible merchant spends only · see MITC</div>
+        </Scene>
+
+        {/* progress rail */}
+        <div style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 3, height: 120, borderRadius: 9, background: magenta > 0.4 ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.08)", zIndex: 10 }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: (p * 100) + "%", borderRadius: 9, background: magenta > 0.4 ? "#fff" : BRAND }}></div>
+        </div>
+
+        {/* scroll cue */}
+        <div style={{ position: "absolute", bottom: 60, left: 0, right: 0, textAlign: "center", opacity: clamp(1 - p * 8, 0, 1), zIndex: 10 }}>
+          <div style={{ fontSize: 12, color: "var(--t3)", letterSpacing: ".1em" }}>scroll</div>
+          <div style={{ fontSize: 18, color: "var(--t3)", marginTop: 2 }}>↓</div>
+        </div>
+        </div>
+
+        {/* scroll track (drives the pinned stage) */}
+        <div style={{ height: "460%" }}></div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [done, setDone] = useState(false);
+  return (
+    <IOSDevice>
+      <div style={{ position: "absolute", inset: 0 }}>
+        {done ? (
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--bg3)", textAlign: "center" }}>
+            <SlicePie size={84} idPrefix="d" />
+            <div className="big" style={{ fontSize: 26, marginTop: 22 }}>back to home</div>
+            <button onClick={() => setDone(false)} style={{ marginTop: 20, background: "transparent", border: 0, color: BRAND, font: "500 15px var(--font)", cursor: "pointer" }}>replay</button>
+          </div>
+        ) : <Film onDone={() => setDone(true)} />}
+      </div>
+    </IOSDevice>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

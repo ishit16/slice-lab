@@ -1,0 +1,2658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slice App – Slicelab 3.0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --brand: #d30ad7;
+      --bg-primary: #ffffff;
+      --bg-tertiary: #f6f9fc;
+      --text-primary:   rgba(0,0,0,0.9);
+      --text-secondary: rgba(0,0,0,0.7);
+      --text-tertiary:  rgba(0,0,0,0.5);
+      --text-disabled:  rgba(0,0,0,0.3);
+      --outline-subtle: rgba(0,0,0,0.05);
+      --nav-secondary-bg: rgba(0,0,0,0.1);
+      --positive: #00a63e;
+      --info: #2b6acf;
+      --info-subtle: #e6edf9;
+      --orange-subtle: #fff0e0;
+      --orange-bold: #ff9f3d;
+      --green-subtle: #e0f4e8;
+      --red-bold: #da535a;
+      --shadow-subtle: rgba(0,0,0,0.05);
+      --nav-dur: 300ms;
+      --nav-ease: cubic-bezier(.4,0,.2,1);
+    }
+
+    html, body { width: 100%; height: 100%; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #0a0a0a;
+      font-family: 'Rubik', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+      color: var(--text-primary);
+    }
+    .phone-scale-wrapper {
+      /* Scales the 360x780 phone to fit the viewport height while preserving aspect ratio */
+      transform-origin: center;
+    }
+
+    /* ═════ EXPLORE-MODE: Recharge & bills entry points ═════ */
+    /* Shared: a small "bill" chip */
+    .exp-bill-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      background: #fff;
+      border: 1px solid var(--outline-subtle);
+      border-radius: 100px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      font-size: 12px; font-weight: 500;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--text-primary);
+      cursor: pointer;
+      flex-shrink: 0;
+      white-space: nowrap;
+      transition: transform 120ms;
+    }
+    .exp-bill-chip:active { transform: scale(0.97); }
+    .exp-bill-chip .chip-avatar {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: #f0f4f7;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700;
+      color: var(--text-secondary);
+    }
+    .exp-bill-chip .chip-due {
+      color: #ff8100;
+      font-weight: 400;
+    }
+
+    /* Payments L0 — horizontal chips below "Check balance" */
+    .exp-pay-bills {
+      position: absolute;
+      top: 108px; left: 0; right: 0;
+      padding: 4px 24px 0;
+      display: flex; gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      z-index: 5;
+    }
+    .exp-pay-bills::-webkit-scrollbar { display: none; }
+    .exp-pay-bills .exp-bill-chip {
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.25);
+      color: #fff;
+      backdrop-filter: blur(8px);
+    }
+    .exp-pay-bills .exp-bill-chip .chip-avatar {
+      background: rgba(255,255,255,.25);
+      color: #fff;
+    }
+    .exp-pay-bills .exp-bill-chip .chip-due {
+      color: #ffe07a;
+    }
+
+    /* AVC L0 — smart bill reminder banner */
+    .exp-avc-banner {
+      margin: 12px 24px;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #fff7e0 0%, #ffeaca 100%);
+      border: 1px solid #ffd699;
+      border-radius: 16px;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer;
+    }
+    .exp-avc-banner .icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: #ff9f3d;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: #fff; font-size: 18px;
+    }
+    .exp-avc-banner .body {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .exp-avc-banner .title {
+      font-size: 13px; font-weight: 500;
+      line-height: 18px; letter-spacing: 0.24px;
+      color: var(--text-primary);
+    }
+    .exp-avc-banner .sub {
+      font-size: 11px; font-weight: 400;
+      line-height: 14px; letter-spacing: 0.2px;
+      color: #b56a00;
+    }
+    .exp-avc-banner .cta {
+      padding: 6px 14px;
+      background: #d30ad7;
+      border-radius: 100px;
+      color: #fff;
+      font-size: 12px; font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    /* AVC L0 — "Pay again" inline action on past bill rows */
+    .exp-pay-again-pill {
+      padding: 4px 10px;
+      background: #fae2fa;
+      color: var(--brand);
+      border-radius: 100px;
+      font-size: 11px; font-weight: 500;
+      line-height: 14px; letter-spacing: 0.22px;
+      margin-left: 8px;
+      cursor: pointer;
+    }
+
+    /* Banking L0 — Auto-pay from savings card */
+    .exp-autopay-card {
+      padding: 20px;
+      background: linear-gradient(135deg, #f6f9fc 0%, #e6edf9 100%);
+      border: 1px solid #d8e3ed;
+      border-radius: 16px;
+      display: flex; gap: 12px; align-items: center;
+      cursor: pointer;
+    }
+    .exp-autopay-card .icon {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: #2b6acf;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .exp-autopay-card .body {
+      flex: 1; display: flex; flex-direction: column; gap: 2px;
+    }
+    .exp-autopay-card .title {
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--text-primary);
+    }
+    .exp-autopay-card .sub {
+      font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--text-secondary);
+    }
+    .exp-autopay-card .cta {
+      padding: 6px 14px;
+      background: #fff;
+      color: var(--brand);
+      border: 1px solid var(--brand);
+      border-radius: 100px;
+      font-size: 12px; font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    /* Banking L0 — monies redeem-for-bills inline hint */
+    .exp-monies-bills {
+      font-size: 12px; font-weight: 500;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--brand);
+      margin-top: 4px;
+      cursor: pointer;
+    }
+    .exp-monies-bills::before {
+      content: '⚡';
+      margin-right: 4px;
+    }
+
+    /* Credit L0 — "Pay bills" tile card */
+    .exp-credit-bills-card {
+      padding: 20px;
+      background: #fff;
+      border: 1px solid var(--outline-subtle);
+      border-radius: 16px;
+      box-shadow: 0 2px 16px rgba(0,0,0,.05);
+      display: flex; gap: 12px; align-items: center;
+      cursor: pointer;
+    }
+    .exp-credit-bills-card .icon-row {
+      display: flex; gap: -8px;
+      margin-right: 4px;
+    }
+    .exp-credit-bills-card .mini-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600;
+      color: #fff;
+      border: 2px solid #fff;
+      margin-left: -6px;
+    }
+    .exp-credit-bills-card .body {
+      flex: 1; display: flex; flex-direction: column; gap: 2px;
+    }
+    .exp-credit-bills-card .title {
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--text-primary);
+    }
+    .exp-credit-bills-card .sub {
+      font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--text-secondary);
+    }
+    .exp-credit-bills-card .tag {
+      padding: 4px 8px;
+      background: #fae2fa;
+      color: var(--brand);
+      border-radius: 100px;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.2px;
+      flex-shrink: 0;
+    }
+
+    /* Credit L0 — small hint under Spends card insights */
+    .exp-credit-spends-hint {
+      margin-top: 4px;
+      padding: 8px 12px;
+      background: #fae2fa;
+      border-radius: 8px;
+      font-size: 12px; font-weight: 500;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--brand);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .exp-credit-spends-hint::before {
+      content: '💡';
+    }
+
+    /* Credit L1 — 3rd "Pay bills" button (matches existing l1-btn) */
+    .l1-btn-group.exp-three-btn .l1-btn {
+      padding: 12px 16px;
+    }
+    .l1-btn-group.exp-three-btn .l1-btn-text {
+      font-size: 14px;
+    }
+
+    /* Global slim banner above any L0 (top of phone, below status bar) */
+    .exp-global-banner {
+      position: absolute;
+      top: 44px; left: 0; right: 0;
+      padding: 8px 24px;
+      background: linear-gradient(90deg, #fff7e0 0%, #ffeaca 50%, #fff7e0 100%);
+      display: flex; align-items: center; gap: 8px;
+      z-index: 8;
+      border-bottom: 1px solid #ffd699;
+      cursor: pointer;
+      font-size: 12px; font-weight: 500;
+      letter-spacing: 0.24px;
+      color: #b56a00;
+    }
+    .exp-global-banner .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #ff9f3d;
+      flex-shrink: 0;
+    }
+    .exp-global-banner .pay-link {
+      margin-left: auto;
+      color: var(--brand);
+      font-weight: 600;
+    }
+
+    /* Mode toggle — 3-state pill */
+    .mode-bar {
+      position: fixed;
+      top: 16px; left: 16px;
+      z-index: 9999;
+      display: flex; align-items: center;
+      padding: 4px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 100px;
+      font-family: 'Rubik', sans-serif;
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.22px;
+      backdrop-filter: blur(10px);
+      gap: 2px;
+    }
+    .mode-bar a {
+      padding: 6px 12px;
+      border-radius: 100px;
+      color: rgba(255,255,255,.5);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 6px;
+      transition: background 150ms, color 150ms;
+      white-space: nowrap;
+    }
+    .mode-bar a:hover { color: rgba(255,255,255,.85); }
+    .mode-bar a.active { color: #fff; }
+    .mode-bar a.active.prod    { background: rgba(0,166,62,.22); }
+    .mode-bar a.active.bbps    { background: rgba(255,183,0,.22); }
+    .mode-bar a.active.slice3  { background: rgba(211,10,215,.28); }
+    .mode-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+    .mode-bar a.active.prod   .mode-dot { background: #00a63e; }
+    .mode-bar a.active.bbps   .mode-dot { background: #ffb700; }
+    .mode-bar a.active.slice3 .mode-dot { background: #ff5fdc; }
+
+    .phone {
+      width: 360px; height: 780px;
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 40px 100px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.06);
+      user-select: none;
+      cursor: grab;
+      flex-shrink: 0;
+      background: #fff;
+    }
+    .phone:active { cursor: grabbing; }
+
+    .slider {
+      display: flex;
+      width: calc(360px * 5);
+      height: 100%;
+      will-change: transform;
+    }
+    .screen {
+      width: 360px; height: 780px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    /* Status bar */
+    .status-bar {
+      height: 44px;
+      padding: 8px 30px 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+    .status-time {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Rubik', sans-serif;
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: -0.4px;
+      line-height: 1;
+    }
+    .status-icons { display: flex; align-items: center; gap: 6.4px; }
+    .status-icons img { display: block; }
+
+    /* App bar */
+    .app-bar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px 8px 24px;
+    }
+    .app-bar-title {
+      font-size: 24px; font-weight: 500;
+      line-height: 32px; letter-spacing: 0.48px;
+      color: var(--text-primary);
+      flex: 1;
+    }
+    .app-bar-actions { display: flex; align-items: center; gap: 4px; }
+    .icon-btn {
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .icon-btn img { display: block; }
+    .avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1px solid var(--outline-subtle);
+      background: #ddd;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--outline-subtle);
+      border-radius: 16px;
+      box-shadow: 0 2px 16px var(--shadow-subtle);
+    }
+
+    /* ═════ PAYMENTS L0 ═════ */
+    #screen-2 { background: var(--brand); }
+    #screen-2 .app-bar, #screen-2 .status-bar { background: var(--brand); }
+    .status-bar-svg {
+      display: block;
+      width: 360px;
+      height: 44px;
+    }
+    /* Invert the white status bar SVG on light-background screens */
+    .status-bar-svg.dark { filter: invert(1) brightness(.55); }
+    .numpad-svg {
+      display: block;
+      width: 312px;
+      height: auto;
+      margin: 0 auto;
+    }
+    .pay-bottom-nav-wrap {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 360px;
+      height: 120px;
+      z-index: 25;
+    }
+    .pay-bottom-nav {
+      width: 360px;
+      height: 120px;
+      display: block;
+      pointer-events: none;
+    }
+    .pay-nav-tap {
+      position: absolute;
+      top: 32px;
+      height: 40px;
+      cursor: pointer;
+      background: transparent;
+      /* Uncomment to debug positions:
+      background: rgba(255,0,0,.2); border: 1px solid red;
+      */
+    }
+
+    /* ═════ L1 OVERLAY ═════ */
+    .l1-overlay {
+      position: absolute;
+      inset: 0;
+      width: 360px;
+      height: 780px;
+      background: #fff;
+      z-index: 30;
+      transform: translateX(100%);
+      transition: transform 350ms cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .l1-overlay.open { transform: translateX(0); }
+    .l1-app-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .l1-nav-icon {
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .l1-back {
+      width: 24px; height: 24px;
+      transform: scaleX(-1);
+    }
+    .l1-pie {
+      width: 24px; height: 24px;
+    }
+    .l1-body {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .l1-body::-webkit-scrollbar { display: none; }
+
+    /* Header section */
+    .l1-header {
+      padding: 32px 24px;
+      display: flex; flex-direction: column; gap: 32px;
+      align-items: center;
+      background: #fff;
+    }
+    .l1-card-block {
+      display: flex; flex-direction: column; gap: 12px;
+      width: 100%;
+    }
+    .l1-card-header {
+      display: flex; flex-direction: column; gap: 8px;
+      align-items: center;
+      width: 100%;
+    }
+    .l1-date {
+      display: flex; gap: 2px; align-items: center; justify-content: center;
+    }
+    .l1-date-text {
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--text-tertiary);
+    }
+    .l1-date img { width: 16px; height: 16px; display: block; }
+    .l1-amount {
+      font-size: 48px; font-weight: 500;
+      line-height: 56px; letter-spacing: -0.48px;
+      color: var(--text-primary);
+    }
+    .l1-insight-link {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 24px;
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--brand);
+      cursor: pointer;
+    }
+
+    .l1-btn-group {
+      display: flex; gap: 16px;
+      width: 100%;
+    }
+    .l1-btn {
+      flex: 1;
+      background: #f0f4f7;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 100px;
+      cursor: pointer;
+    }
+    .l1-btn img { width: 24px; height: 24px; display: block; }
+    .l1-btn-text {
+      font-size: 16px; font-weight: 500;
+      line-height: 24px; letter-spacing: 0.32px;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    .l1-todo {
+      width: 100%;
+      background: #f6f9fc;
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px;
+      border-radius: 16px;
+    }
+    .l1-todo-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #e6edf9;
+      border: 1px solid var(--outline-subtle);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .l1-todo-avatar img { width: 20px; height: 20px; display: block; }
+    .l1-todo-avatar-svg, .l1-li-avatar-svg {
+      width: 40px; height: 40px;
+      display: block;
+      flex-shrink: 0;
+    }
+    .l1-todo-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .l1-todo-title {
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--text-primary);
+    }
+    .l1-todo-sub {
+      font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--text-tertiary);
+    }
+
+    /* Section header */
+    .l1-section-header {
+      background: #f6f9fc;
+      padding: 8px 24px;
+      height: 28px;
+      display: flex; align-items: center;
+      font-size: 10px; font-weight: 400;
+      line-height: 12px; letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+    }
+    .l1-section { display: flex; flex-direction: column; }
+    .l1-section + .l1-section { margin-top: 16px; }
+
+    /* List item */
+    .l1-list-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 24px;
+      background: #fff;
+    }
+    .l1-li-content {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 4px;
+      justify-content: center;
+    }
+    .l1-li-sub {
+      font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--text-secondary);
+    }
+    .l1-li-title {
+      font-size: 16px; font-weight: 500;
+      line-height: 24px; letter-spacing: 0.32px;
+      color: var(--text-primary);
+    }
+    .l1-li-title-regular {
+      font-size: 16px; font-weight: 400;
+      line-height: 24px; letter-spacing: 0.32px;
+      color: var(--text-primary);
+    }
+    .l1-li-due {
+      font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: #ff8100;
+    }
+    .l1-repay-btn {
+      background: var(--brand);
+      padding: 8px 16px;
+      border-radius: 100px;
+      color: #fff;
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      cursor: pointer;
+    }
+    .l1-li-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid var(--outline-subtle);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .l1-li-avatar img { width: 20px; height: 20px; display: block; }
+    .l1-tag {
+      padding: 4px 8px;
+      border-radius: 100px;
+      font-size: 10px; font-weight: 400;
+      line-height: 12px; letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .l1-tag-info { background: #e6edf9; color: #2b6acf; }
+    .l1-tag-brand { background: #fae2fa; color: var(--brand); }
+
+    .l1-gesture {
+      flex-shrink: 0;
+      padding: 8px 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff;
+    }
+    .l1-gesture-pill {
+      width: 128px; height: 4px;
+      border-radius: 40px;
+      background: rgba(0,0,0,.3);
+    }
+
+    /* Tap targets on L0 */
+    .credit-card-tappable { cursor: pointer; transition: transform 120ms; }
+    .credit-card-tappable:active { transform: scale(0.985); }
+
+    /* ═════ SPARK L1 ═════ */
+    .l1-app-bar-title {
+      flex: 1;
+      font-size: 20px; font-weight: 500;
+      line-height: 24px; letter-spacing: 0.4px;
+      color: var(--text-primary);
+      padding-left: 4px;
+    }
+    .spark-empty-card {
+      position: relative;
+      margin: 32px 24px 0;
+      width: 248px;
+      height: 248px;
+      align-self: flex-start;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .spark-empty-card .base-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+    }
+    .spark-empty-card .dashed-circle {
+      position: absolute;
+      top: 24px; left: 24px;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 2px dashed rgba(0,0,0,.18);
+    }
+    .spark-empty-card .no-spark {
+      position: absolute;
+      top: 74px; left: 24px;
+      font-size: 14px; font-weight: 400;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: rgba(0,0,0,.3);
+    }
+    .spark-empty-card .credit-card-label {
+      position: absolute;
+      right: 24px; bottom: 24px;
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: rgba(0,0,0,.3);
+      text-align: right;
+    }
+
+    .spark-brand-scroll {
+      display: flex; gap: 16px;
+      padding: 32px 24px 24px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .spark-brand-scroll::-webkit-scrollbar { display: none; }
+    .spark-brand-card {
+      flex-shrink: 0;
+      width: 176px;
+      height: 160px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid #eef2f5;
+      border-radius: 24px;
+      box-shadow: 0 2px 32px rgba(0,0,0,.06);
+      position: relative;
+      padding: 19px;
+    }
+    .spark-brand-name {
+      font-size: 14px; font-weight: 400;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--text-secondary);
+    }
+    .spark-cashback {
+      position: absolute;
+      left: 19px; top: 51px;
+      width: 136px;
+      font-size: 16px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.32px;
+    }
+    .spark-cashback.pink   { color: #fc2779; }
+    .spark-cashback.black  { color: #000; }
+    .spark-cashback.olive  { color: #94a720; }
+    .spark-cashback.dgreen { color: #286043; }
+    .spark-cashback.blue   { color: #107bd4; }
+
+    .spark-timer {
+      position: absolute;
+      left: 19px; bottom: 19px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .spark-timer svg { width: 16px; height: 16px; display: block; }
+    .spark-timer span {
+      font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: rgba(0,0,0,.4);
+    }
+    .spark-brand-logo {
+      position: absolute;
+      right: 17px; bottom: 17px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .spark-brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ═════ L2 · UNBILLED SPENDS ═════ */
+    .ub-fixed-top {
+      flex-shrink: 0;
+      background: #fff;
+    }
+    .ub-list {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .ub-list::-webkit-scrollbar { display: none; }
+    .ub-item {
+      display: flex;
+      gap: 12px;
+      padding: 16px 24px;
+      background: #fff;
+      cursor: pointer;
+      align-items: flex-start; /* top-align so amount lines up with vendor name */
+      transition: background 120ms;
+    }
+    .ub-item:active { background: rgba(0,0,0,.02); }
+    /* DLS Avatar / Alphabet — subtle decorative bg + bold decorative letter */
+    .ub-avatar {
+      width: 40px; height: 40px;
+      margin-top: 2px;          /* match Figma y=2 inside the 44h Avatar+Title */
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1px solid var(--outline-subtle);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Rubik', sans-serif;
+      font-size: 20px;
+      font-weight: 500;        /* Rubik Medium per DLS */
+      letter-spacing: -0.2px;  /* -1% per DLS */
+      line-height: 1;
+    }
+    .ub-avatar.av-orange { background: #fff0e0; color: #ff9f3d; }
+    .ub-avatar.av-green  { background: #e0f4e8; color: #00a63e; }
+    .ub-avatar.av-blue   { background: #e6edf9; color: #2b6acf; }
+    .ub-avatar.av-red    { background: #ffeaec; color: #da535a; }
+    .ub-avatar.av-purple { background: #fae2fa; color: #d30ad7; }
+    .ub-body {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 4px;
+      justify-content: center;
+      height: 44px;            /* matches Figma Avatar+Title height */
+    }
+    .ub-name {
+      font-size: 16px; font-weight: 400;
+      line-height: 24px; letter-spacing: 0.32px;
+      color: var(--text-primary);
+    }
+    .ub-sub {
+      font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--text-secondary);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .ub-sub .dot {
+      width: 2px; height: 2px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.4);
+    }
+    .ub-amount {
+      font-size: 16px; font-weight: 400;
+      line-height: 24px; letter-spacing: 0.32px;
+      text-align: right;
+      flex-shrink: 0;
+      height: 44px;            /* matches Figma Value height */
+      display: flex;
+      align-items: flex-start; /* top-align amount with vendor name */
+      justify-content: flex-end;
+    }
+    .ub-amount.green { color: var(--positive); }
+    .ub-amount.dark  { color: var(--text-primary); }
+
+    /* Excess balance specially-styled item */
+    .ub-excess {
+      padding: 16px 24px;
+      display: flex; flex-direction: column;
+      gap: 8px;
+      cursor: default;
+    }
+    .ub-excess-row {
+      display: flex; gap: 12px; align-items: center;
+    }
+    .ub-excess-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #3dbb6c;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .ub-excess-tag {
+      margin-left: 52px;
+      background: linear-gradient(90deg, #e0f4e8 0%, #fff 100%);
+      border-radius: 12px;
+      padding: 4px 12px;
+      font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--positive);
+      align-self: flex-start;
+    }
+
+    /* ═════ L3 · TRANSACTION DETAIL (Figma) ═════ */
+    .td-info {
+      padding: 16px 24px 24px;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+    .td-amount-row {
+      display: flex; align-items: center; gap: 16px;
+      width: 100%;
+    }
+    .td-amount-text {
+      flex: 1;
+      font-size: 24px; font-weight: 500;
+      line-height: 32px; letter-spacing: 0.48px;
+      color: var(--text-primary);
+    }
+    .td-status-icon {
+      width: 56px; height: 56px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .td-meta-row {
+      display: flex; gap: 16px; align-items: flex-start;
+      width: 100%;
+    }
+    .td-meta {
+      flex: 1;
+      display: flex; flex-direction: column;
+    }
+    .td-meta-name {
+      font-size: 18px; font-weight: 400;
+      line-height: 28px; letter-spacing: 0.36px;
+      color: var(--text-secondary);
+    }
+    .td-meta-time {
+      font-size: 14px; font-weight: 400;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--text-tertiary);
+    }
+    .td-link-btn {
+      padding: 8px 0;
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--brand);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .td-notes-pill {
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      padding: 8px 12px;
+      align-self: flex-start;
+      display: flex; gap: 4px; align-items: center;
+    }
+    .td-notes-label {
+      font-style: italic;
+      font-size: 14px;
+      line-height: 20px;
+      color: var(--text-primary);
+    }
+    .td-notes-value {
+      font-size: 14px;
+      line-height: 20px;
+      color: var(--text-secondary);
+    }
+    .td-big-divider {
+      height: 8px; background: var(--bg-tertiary);
+      flex-shrink: 0;
+    }
+    .td-section-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 24px;
+    }
+    .td-section-row .av {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid var(--outline-subtle);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .td-section-row .av svg { width: 20px; height: 20px; display: block; }
+    .td-section-row .lbl {
+      flex: 1;
+      font-size: 16px; font-weight: 400;
+      line-height: 24px; letter-spacing: 0.32px;
+      color: var(--text-primary);
+    }
+    .td-section-header {
+      padding: 16px 24px;
+      display: flex; align-items: center;
+      min-height: 56px;
+    }
+    .td-section-header h3 {
+      flex: 1;
+      font-size: 16px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.32px;
+      color: var(--text-primary);
+    }
+    .td-divider-thin {
+      height: 1px; background: var(--outline-subtle);
+      margin: 0 24px;
+    }
+    .td-kv-row {
+      padding: 16px 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .td-kv-content {
+      flex: 1;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .td-kv-title {
+      font-size: 16px; font-weight: 400;
+      line-height: 24px; letter-spacing: 0.32px;
+      color: var(--text-primary);
+    }
+    .td-kv-sub {
+      font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      color: var(--text-secondary);
+    }
+    .td-kv-trailing {
+      width: 24px; height: 24px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .td-kv-trailing svg { width: 20px; height: 20px; display: block; }
+    .td-add-notes {
+      font-size: 16px; font-weight: 400;
+      line-height: 24px; letter-spacing: 0.32px;
+      color: var(--text-tertiary);
+    }
+    .td-contact {
+      height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      width: 100%;
+    }
+    .td-contact-text {
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--brand);
+      cursor: pointer;
+    }
+    .td-footer {
+      height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      width: 100%;
+      color: var(--text-tertiary);
+    }
+    .td-rupay-logo {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .td-rupay-logo .rupay {
+      font-family: 'Rubik', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: #1d4072;
+      letter-spacing: -0.3px;
+    }
+    .td-rupay-logo .rupay-arrow {
+      color: #ff9b39;
+    }
+    .td-rupay-logo .upi {
+      font-family: 'Rubik', sans-serif;
+      font-style: italic;
+      font-weight: 700;
+      font-size: 11px;
+      color: #97a01b;
+      letter-spacing: -0.2px;
+    }
+    .pay-bottom-nav.animate-in {
+      animation: scan-pop 420ms cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes scan-pop {
+      0%   { transform: scale(0.78); opacity: 0.4; }
+      60%  { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+    .pay-balance-btn {
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 100px;
+      padding: 8px 16px;
+      color: #fff; font-size: 14px;
+      line-height: 20px; letter-spacing: 0.28px;
+      cursor: pointer;
+    }
+    .pay-bell {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.3);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pay-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.3);
+      background: #888;
+    }
+    .pay-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .pay-main {
+      position: absolute;
+      top: 108px; left: 0; right: 0;
+      height: 552px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .pay-top { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+    .pay-amount {
+      color: #fff; font-size: 80px; font-weight: 400;
+      line-height: 96px; letter-spacing: -0.8px;
+    }
+    .pay-upi {
+      background: rgba(255,255,255,.1);
+      border-radius: 24px;
+      padding: 8px 16px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .pay-upi img.bhim { height: 14px; width: auto; opacity: .95; display: block; }
+    .pay-upi span { color: #fff; font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; }
+    .pay-upi .chev { display: block; }
+    .pay-bottom { width: 100%; padding: 0 24px; display: flex; flex-direction: column; gap: 16px; }
+    .numpad { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+    .num-row { display: flex; gap: 72px; align-items: center; }
+    .num-key {
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 20px; font-weight: 500;
+      letter-spacing: 0.4px; line-height: 24px;
+      cursor: pointer; border-radius: 50%;
+      transition: background .15s;
+    }
+    .num-key:hover { background: rgba(255,255,255,.12); }
+    .pay-buttons { display: flex; gap: 16px; }
+    .pay-btn {
+      flex: 1; height: 48px; border-radius: 100px;
+      background: rgba(255,255,255,.2);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 16px; font-weight: 500;
+      letter-spacing: 0.32px;
+      cursor: pointer;
+    }
+
+    /* ═════ BANKING / CREDIT / EXPLORE shared ═════ */
+    .scroll-body {
+      position: absolute;
+      top: 108px;
+      bottom: 0;
+      left: 0; right: 0;
+      padding: 16px 24px 140px;
+      display: flex; flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .scroll-body::-webkit-scrollbar { display: none; }
+    .card-large, .card-medium {
+      padding: 24px;
+      display: flex; flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .scroll-body > * { flex-shrink: 0; }
+    .card-large { gap: 32px; }
+    .card-medium { gap: 24px; }
+    .card-sub-label {
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--text-tertiary);
+    }
+    .card-amount {
+      font-size: 48px; font-weight: 500;
+      line-height: 56px; letter-spacing: -0.48px;
+      color: var(--text-primary);
+    }
+    .insight {
+      display: flex; align-items: center; gap: 8px;
+      min-height: 24px;
+    }
+    .insight img { width: 16px; height: 16px; display: block; }
+    .insight-text-green {
+      font-size: 13px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.13px;
+      color: var(--positive);
+      white-space: nowrap;
+    }
+    .insight-text-grey {
+      font-size: 14px; font-weight: 400;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--text-tertiary);
+    }
+    .card-divider {
+      height: 1px; background: var(--outline-subtle);
+      margin: 0 -24px;
+    }
+    .grow-row {
+      padding-top: 16px;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      gap: 8px;
+    }
+    .grow-text h4 {
+      color: var(--brand); font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+    }
+    .grow-text p {
+      color: var(--text-secondary); font-size: 12px; font-weight: 400;
+      line-height: 16px; letter-spacing: 0.24px;
+      margin-top: 4px;
+    }
+    .btn-primary {
+      background: var(--brand);
+      border-radius: 100px;
+      padding: 8px 16px;
+      color: #fff; font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      cursor: pointer;
+    }
+    .medium-deco {
+      position: absolute; top: 0; right: 0;
+      width: 96px; height: 96px;
+      pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .medium-deco img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .medium-deco svg { display: block; }
+    .monies-row { display: flex; align-items: center; gap: 4px; }
+    .monies-row img { height: 36px; display: block; }
+    .reward-text {
+      font-size: 14px; font-weight: 500;
+      line-height: 20px; letter-spacing: 0.28px;
+      color: var(--brand);
+    }
+
+    /* Explore */
+    .recharge-card { padding: 24px 20px; display: flex; flex-direction: column; gap: 16px; }
+    .recharge-header { display: flex; align-items: center; justify-content: space-between; }
+    .recharge-title { font-size: 16px; font-weight: 500; line-height: 20px; letter-spacing: 0.32px; color: var(--text-primary); }
+    .fee-tag { background: var(--info-subtle); border-radius: 100px; padding: 2px 8px; color: var(--info); font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; }
+    .icon-row { display: flex; align-items: flex-start; justify-content: space-between; }
+    .icon-col { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 56px; }
+    .icon-circle {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--outline-subtle);
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .icon-circle img { width: 20px; height: 20px; display: block; }
+    .icon-lbl { font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; color: var(--text-tertiary); }
+    .reward-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid var(--outline-subtle);
+    }
+    .reward-left { display: flex; align-items: center; gap: 12px; }
+    .reward-title { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.28px; color: var(--text-primary); }
+    .reward-sub { font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; color: var(--text-tertiary); margin-top: 2px; }
+    .chev-btn { padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .chev-btn img { width: 16px; height: 16px; display: block; }
+
+    .cards-row { display: flex; gap: 16px; }
+    .exp-card {
+      width: 148px; height: 148px;
+      border-radius: 16px;
+      border: 1px solid var(--outline-subtle);
+      box-shadow: 0 2px 32px var(--shadow-subtle);
+      background: #fff;
+      position: relative; overflow: hidden;
+      flex-shrink: 0;
+    }
+    .exp-card-txt {
+      position: absolute;
+      top: 19px; left: 19px;
+      display: flex; flex-direction: column; gap: 4px;
+      width: 108px;
+    }
+    .exp-card-lbl { font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; color: var(--text-tertiary); }
+    .exp-card-val { font-size: 16px; font-weight: 500; line-height: 20px; letter-spacing: 0.32px; color: var(--text-primary); }
+    .exp-deco {
+      position: absolute;
+      bottom: 18px; right: 18px;
+      pointer-events: none;
+    }
+    .exp-deco img { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .exp-col { display: flex; flex-direction: column; gap: 16px; }
+    .exp-half {
+      width: 148px; height: 66px;
+      border-radius: 16px;
+      border: 1px solid var(--outline-subtle);
+      box-shadow: 0 2px 32px var(--shadow-subtle);
+      background: #fff;
+      position: relative; overflow: hidden;
+    }
+    .exp-half .exp-card-txt { top: 12px; left: 15px; width: 116px; }
+
+    /* Credit */
+    .insight-row { display: flex; flex-direction: column; gap: 12px; }
+    .marketing-sub {
+      background: var(--bg-tertiary);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .marketing-sub > img { width: 24px; height: 24px; display: block; flex-shrink: 0; }
+    .marketing-sub-title { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.28px; color: var(--text-primary); }
+    .marketing-sub-sub { font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; color: var(--text-tertiary); margin-top: 2px; }
+    .spark-card { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .spark-top { display: flex; align-items: center; gap: 12px; }
+    .spark-icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--outline-subtle);
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .spark-icon img { width: 20px; height: 20px; display: block; }
+    .spark-avatar-svg { width: 40px; height: 40px; display: block; flex-shrink: 0; }
+    .spark-chev { width: 12px; height: 12px; display: block; flex-shrink: 0; }
+    .meet-card-svg {
+      display: block;
+      width: 312px;
+      height: auto;
+      border-radius: 16px;
+      border: 1px solid var(--outline-subtle);
+      /* DLS 2.0 / Elevation / Card */
+      box-shadow: 0px 2px 32px 0px rgba(0,0,0,0.05);
+    }
+    .spark-title { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.28px; color: var(--text-secondary); }
+    .spark-sub { font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; color: var(--text-tertiary); margin-top: 2px; }
+    .spark-divider { height: 1px; background: var(--outline-subtle); }
+    .spark-bottom { display: flex; align-items: center; gap: 8px; }
+    .spark-logos { display: flex; align-items: center; }
+    .spark-logos img { width: 24px; height: 24px; margin-right: -8px; display: block; border-radius: 50%; }
+    .spark-count { font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; color: var(--text-primary); flex: 1; margin-left: 0; }
+    .credit-card-promo {
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+      height: 172px;
+    }
+    .credit-card-promo-txt { position: absolute; top: 40px; left: 24px; width: 209px; }
+    .credit-card-promo-title { font-size: 20px; font-weight: 500; line-height: 24px; letter-spacing: 0.4px; color: var(--text-primary); }
+    .credit-card-promo-sub { font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; color: var(--text-secondary); margin-top: 8px; }
+    .credit-card-promo .promo-deco {
+      position: absolute;
+      right: 0; top: 0;
+      width: 121px; height: 120px;
+    }
+    .credit-card-promo .promo-deco img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+    /* AVC */
+    .avc-content {
+      position: absolute; top: 108px; left: 0; right: 0;
+      display: flex; flex-direction: column;
+    }
+    .search-row {
+      display: flex; gap: 8px; align-items: center;
+      padding: 8px 24px;
+      background: #fff;
+    }
+    .search-pill {
+      flex: 1; height: 48px; border-radius: 100px;
+      border: 2px solid var(--outline-subtle);
+      display: flex; align-items: center;
+      padding: 0 14px; gap: 8px;
+    }
+    .search-pill img { width: 20px; height: 20px; display: block; }
+    .search-pill span { color: var(--text-tertiary); font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0.28px; }
+    .filter-btn {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 2px solid var(--outline-subtle);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .filter-btn img { width: 20px; height: 20px; display: block; }
+    .txn-item { display: flex; align-items: center; gap: 12px; padding: 16px 24px; }
+    .txn-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      overflow: hidden; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--outline-subtle);
+      font-size: 20px; font-weight: 500; letter-spacing: -0.2px;
+    }
+    .txn-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .txn-avatar .inner-svg { width: 20px; height: 20px; }
+    .txn-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .txn-name { font-size: 16px; font-weight: 400; line-height: 24px; letter-spacing: 0.32px; color: var(--text-primary); }
+    .txn-date { font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0.24px; color: var(--text-secondary); }
+    .txn-amount { font-size: 16px; font-weight: 400; line-height: 24px; letter-spacing: 0.32px; text-align: right; flex-shrink: 0; }
+    .txn-amount.positive { color: var(--positive); }
+    .txn-amount.neutral  { color: var(--text-primary); }
+
+    /* Shared nav */
+    #shared-nav {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 360px;
+      z-index: 20;
+      pointer-events: none;
+      transition: opacity var(--nav-dur) var(--nav-ease);
+    }
+    #shared-nav > * { pointer-events: auto; }
+    .nav-bg-purple, .nav-bg-white {
+      position: absolute; inset: 0;
+      transition: opacity var(--nav-dur) var(--nav-ease);
+    }
+    .nav-bg-purple { background: var(--brand); }
+    .nav-bg-white  { background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, #fff 34%); }
+    .nav-content {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      gap: 12px;
+      padding-top: 16px;
+    }
+    .nav-row { position: relative; width: 360px; height: 64px; }
+    .nav-icon {
+      position: absolute;
+      top: 50%;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transform-origin: center;
+    }
+    .nav-icon img { display: block; pointer-events: none; }
+    .nav-icon .nav-label {
+      font-size: 14px; font-weight: 700;
+      line-height: 16px;
+      color: #fff;
+    }
+    .gesture-bar {
+      height: 20px;
+      padding: 8px 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gesture-pill {
+      width: 128px; height: 4px;
+      border-radius: 40px;
+      transition: background var(--nav-dur) var(--nav-ease);
+    }
+
+    /* Control panel */
+    .control-panel {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 20px;
+      padding: 20px;
+      width: 260px;
+      color: #fff;
+      display: flex; flex-direction: column; gap: 14px;
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+      font-family: 'Rubik', sans-serif;
+    }
+    .cp-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 2px; }
+    .cp-group { display: flex; flex-direction: column; gap: 10px; }
+    .cp-row { display: flex; flex-direction: column; gap: 4px; }
+    .cp-label { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,.7); }
+    .cp-label span { color: var(--brand); font-weight: 600; font-variant-numeric: tabular-nums; }
+    input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 4px; background: rgba(255,255,255,.15); outline: none; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--brand); cursor: pointer; }
+    .cp-select { width: 100%; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; color: #fff; padding: 6px 10px; font-size: 12px; font-family: 'Rubik', sans-serif; outline: none; cursor: pointer; }
+    .cp-select option { background: #222; color: #fff; }
+    .cp-divider { height: 1px; background: rgba(255,255,255,.08); }
+    .cp-hint { font-size: 11px; color: rgba(255,255,255,.3); text-align: center; padding-top: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- Mode toggle (top-left, outside phone) -->
+<div class="mode-bar">
+  <a href="./index.html" data-mode="prototype">Prototype</a>
+  <a href="./explore-bbps.html" class="active bbps" data-mode="bbps"><span class="mode-dot"></span>Explore (BBPS)</a>
+  <a href="./explore-slice3.html" data-mode="slice3">Explore (slice in 3)</a>
+</div>
+<script>
+  (function(){
+    try { localStorage.setItem('slicelab-mode','bbps'); } catch(e) {}
+    document.querySelectorAll('.mode-bar a[data-mode]').forEach(a => {
+      a.addEventListener('click', () => {
+        try { localStorage.setItem('slicelab-mode', a.dataset.mode); } catch(e) {}
+      });
+    });
+  })();
+</script>
+
+<!-- PHONE -->
+<div class="phone-scale-wrapper" id="phone-wrapper">
+<div class="phone" id="phone">
+  <div class="slider" id="slider">
+
+    <!-- ════════════ BANKING (0) ════════════ -->
+    <div class="screen" id="screen-0">
+      <img class="status-bar-svg dark" src="./Assets/Status Bar.svg" alt="" />
+      <div class="app-bar">
+        <span class="app-bar-title">Banking</span>
+        <div class="app-bar-actions">
+          <!-- DLS · General/Eye (hide balance) — tertiary -->
+          <div class="icon-btn">
+            <svg width="24" height="24" viewBox="16 16 24 24" fill="none">
+              <path d="M37.4222 26.2448C34.9895 22.9629 31.4609 21 27.9827 21C24.5044 21 21.187 22.8798 18.5733 26.2864C17.8193 27.273 17.8193 28.7478 18.5733 29.776C20.9859 33.089 24.424 35 27.9927 35C31.5615 35 35.0096 33.089 37.4423 29.7552C38.1963 28.7166 38.1963 27.273 37.4423 26.2448H37.4222ZM35.4217 28.1869C33.4715 30.8665 30.7572 32.3932 27.9827 32.3932C25.2081 32.3932 22.514 30.8665 20.5738 28.2077C20.5034 28.1039 20.5034 27.9481 20.5436 27.8961C22.6748 25.1231 25.3086 23.5964 27.9827 23.5964C30.6567 23.5964 33.4715 25.1751 35.4217 27.8131C35.4921 27.9065 35.4921 28.0831 35.4217 28.1869Z" fill="rgba(0,0,0,.5)"/>
+              <path d="M27.9929 30.0357C29.1033 30.0357 30.0035 29.1057 30.0035 27.9585C30.0035 26.8113 29.1033 25.8813 27.9929 25.8813C26.8825 25.8813 25.9824 26.8113 25.9824 27.9585C25.9824 29.1057 26.8825 30.0357 27.9929 30.0357Z" fill="rgba(0,0,0,.5)"/>
+            </svg>
+          </div>
+          <div class="icon-btn">
+            <div class="avatar"><img src="https://www.figma.com/api/mcp/asset/491ab88a-90c8-42d0-93ef-e275e9df7b86" alt="" /></div>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-body">
+        <div class="card card-large">
+          <div style="display:flex;flex-direction:column;gap:24px">
+            <span class="card-sub-label">Savings ••••5732</span>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div class="card-amount">₹45,800</div>
+              <div class="insight">
+                <img src="https://www.figma.com/api/mcp/asset/98c51e85-3c71-4a2e-ab42-fee9a522cb66" width="16" height="16" alt="" />
+                <span class="insight-text-green">Earn interest at 100% RBI repo rate</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card-divider"></div>
+            <div class="grow-row">
+              <div class="grow-text">
+                <h4>Grow your savings</h4>
+                <p>Earn interest daily</p>
+              </div>
+              <div class="btn-primary">Add money</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🟡 EXPLORE: Auto-pay bills from savings -->
+        <div class="exp-autopay-card" data-exp-bills="banking-autopay">
+          <div class="icon">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M4 11a7 7 0 0112-5l2 2M18 11a7 7 0 01-12 5l-2-2" stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+              <path d="M18 4v4h-4M4 18v-4h4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+          <div class="body">
+            <div class="title">Auto-pay bills from savings</div>
+            <div class="sub">Never miss a due date</div>
+          </div>
+          <div class="cta">Set up</div>
+        </div>
+
+        <div class="card card-medium">
+          <div class="medium-deco">
+            <img src="./Assets/Live deposit.svg" alt="" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <span class="card-sub-label">Fixed deposits</span>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="card-amount">₹0</div>
+              <div class="insight">
+                <img src="https://www.figma.com/api/mcp/asset/98c51e85-3c71-4a2e-ab42-fee9a522cb66" width="16" height="16" alt="" />
+                <span class="insight-text-green">Earn interest up to 7.75 p.a.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-medium">
+          <div class="medium-deco">
+            <img src="./Assets/Monies.svg" alt="" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <span class="card-sub-label">monies</span>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="card-amount" style="margin-bottom:0">12,740</div>
+              <div class="insight"><span class="reward-text">Reward rate at 1%</span></div>
+              <!-- 🟡 EXPLORE: monies → bills -->
+              <div class="exp-monies-bills" data-exp-bills="monies-redeem">Redeem ₹500 on your next bill</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ EXPLORE (1) ════════════ -->
+    <div class="screen" id="screen-1">
+      <img class="status-bar-svg dark" src="./Assets/Status Bar.svg" alt="" />
+      <div class="app-bar">
+        <span class="app-bar-title">Explore</span>
+        <div class="app-bar-actions">
+          <div class="icon-btn"><div class="avatar"><img src="https://www.figma.com/api/mcp/asset/491ab88a-90c8-42d0-93ef-e275e9df7b86" alt="" /></div></div>
+        </div>
+      </div>
+      <div class="scroll-body">
+        <div class="card recharge-card">
+          <div class="recharge-header">
+            <span class="recharge-title">Recharge &amp; bills</span>
+            <span class="fee-tag">₹0 fee</span>
+          </div>
+          <div class="icon-row">
+            <div class="icon-col">
+              <div class="icon-circle"><img src="https://www.figma.com/api/mcp/asset/1459cbb5-89cb-411e-8815-43ffc2eab976" alt="" /></div>
+              <span class="icon-lbl">Card</span>
+            </div>
+            <div class="icon-col">
+              <div class="icon-circle"><img src="https://www.figma.com/api/mcp/asset/513a38c2-f965-4776-9e55-c6c2d117fb24" alt="" /></div>
+              <span class="icon-lbl">Electricity</span>
+            </div>
+            <div class="icon-col">
+              <div class="icon-circle"><img src="https://www.figma.com/api/mcp/asset/6471af45-72a5-42f0-91fe-6dc7aa6590fd" alt="" /></div>
+              <span class="icon-lbl">Prepaid</span>
+            </div>
+            <div class="icon-col">
+              <div class="icon-circle"><img src="https://www.figma.com/api/mcp/asset/7a5fa373-3ef0-4aee-8670-57932a5a8443" alt="" /></div>
+              <span class="icon-lbl">More</span>
+            </div>
+          </div>
+          <div class="reward-row">
+            <div class="reward-left">
+              <div class="icon-circle"><img src="https://www.figma.com/api/mcp/asset/57004714-8671-4e94-b59e-97d5ed0fe0b2" alt="" /></div>
+              <div>
+                <div class="reward-title">Get assured ₹10</div>
+                <div class="reward-sub">Reward on 1st bill payment</div>
+              </div>
+            </div>
+            <div class="chev-btn"><img src="https://www.figma.com/api/mcp/asset/1fc61a7c-c9ef-4e4c-9a34-cc0767cd4ffd" alt="" /></div>
+          </div>
+        </div>
+
+        <div class="cards-row">
+          <div class="exp-card">
+            <div class="exp-card-txt">
+              <span class="exp-card-lbl">Play &amp; win</span>
+              <span class="exp-card-val">Rewards</span>
+            </div>
+            <div class="exp-deco" style="width:54px;height:54px"><img src="https://www.figma.com/api/mcp/asset/4274ce69-dfbf-4157-ad75-34d67713f4fb" alt="" /></div>
+          </div>
+          <div class="exp-card">
+            <div class="exp-card-txt">
+              <span class="exp-card-lbl">May spends</span>
+              <span class="exp-card-val">₹12,487</span>
+            </div>
+            <div class="exp-deco" style="width:50px;height:50px"><img src="https://www.figma.com/api/mcp/asset/40263ac9-228c-4a15-9c1f-dc4225bd52b3" alt="" /></div>
+          </div>
+        </div>
+
+        <div class="cards-row">
+          <div class="exp-card">
+            <div class="exp-card-txt">
+              <span class="exp-card-lbl">Invite</span>
+              <span class="exp-card-val">Earn ₹150</span>
+            </div>
+            <div class="exp-deco" style="width:47px;height:47px"><img src="https://www.figma.com/api/mcp/asset/c83be9f2-8ce6-4c88-a4b8-b8c723e0efec" alt="" /></div>
+          </div>
+          <div class="exp-col">
+            <div class="exp-half">
+              <div class="exp-card-txt">
+                <span class="exp-card-lbl">Credit score</span>
+                <span class="exp-card-val">785</span>
+              </div>
+            </div>
+            <div class="exp-half">
+              <div class="exp-card-txt">
+                <span class="exp-card-lbl">Autopay</span>
+                <span class="exp-card-val">1 active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ PAYMENTS (2) - DEFAULT ════════════ -->
+    <div class="screen" id="screen-2">
+      <img class="status-bar-svg" src="./Assets/Status Bar.svg" alt="" />
+      <div class="app-bar">
+        <div class="pay-balance-btn">Check balance</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="icon-btn">
+            <div class="pay-bell">
+              <img src="https://www.figma.com/api/mcp/asset/7b9c2a80-9846-42dc-8602-1fc180fb97ea" width="20" height="18" alt="" style="filter:brightness(10)" />
+            </div>
+          </div>
+          <div class="icon-btn">
+            <div class="pay-avatar"><img src="https://www.figma.com/api/mcp/asset/491ab88a-90c8-42d0-93ef-e275e9df7b86" alt="" /></div>
+          </div>
+        </div>
+      </div>
+      <!-- 🟡 EXPLORE: upcoming bill chips below header -->
+      <div class="exp-pay-bills" data-exp-bills="payments-chips">
+        <div class="exp-bill-chip"><span class="chip-avatar" style="background:#e23744">A</span>Airtel · ₹399 <span class="chip-due">· 2d</span></div>
+        <div class="exp-bill-chip"><span class="chip-avatar" style="background:#0a7e3a">B</span>BESCOM · ₹1,840 <span class="chip-due">· 5d</span></div>
+        <div class="exp-bill-chip"><span class="chip-avatar" style="background:#e60000">J</span>Jio · ₹299 <span class="chip-due">· 8d</span></div>
+        <div class="exp-bill-chip"><span class="chip-avatar" style="background:#1d4072">L</span>LIC · ₹2,500 <span class="chip-due">· 12d</span></div>
+      </div>
+      <div class="pay-main">
+        <div class="pay-top">
+          <div class="pay-amount">₹0</div>
+          <div class="pay-upi">
+            <img class="bhim" src="./Assets/BHIM%20UPI.png" alt="UPI" />
+            <span>ID: rajan@sliceaxis</span>
+            <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M4.5 2.5L8 6l-3.5 3.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="pay-bottom">
+          <img class="numpad-svg" src="./Assets/Numpad.svg" alt="" />
+          <div class="pay-buttons">
+            <div class="pay-btn">Request</div>
+            <div class="pay-btn">Transfer</div>
+          </div>
+        </div>
+      </div>
+      <div class="pay-bottom-nav-wrap">
+        <img class="pay-bottom-nav" src="./Assets/Bottom nav.svg" alt="" />
+        <!-- Tap regions over each icon in the static SVG (positions match Bottom nav.svg) -->
+        <div class="pay-nav-tap" style="left:24px;width:40px"  data-go="0" title="Banking"></div>
+        <div class="pay-nav-tap" style="left:84px;width:40px"  data-go="1" title="Explore"></div>
+        <div class="pay-nav-tap" style="left:152px;width:56px;height:56px;top:24px" data-go="2" title="Payments"></div>
+        <div class="pay-nav-tap" style="left:236px;width:40px" data-go="3" title="Credit"></div>
+        <div class="pay-nav-tap" style="left:296px;width:40px" data-go="4" title="AVC"></div>
+      </div>
+    </div>
+
+    <!-- ════════════ CREDIT (3) ════════════ -->
+    <div class="screen" id="screen-3">
+      <img class="status-bar-svg dark" src="./Assets/Status Bar.svg" alt="" />
+      <div class="app-bar">
+        <span class="app-bar-title">Credit</span>
+        <div class="app-bar-actions">
+          <div class="icon-btn"><div class="avatar"><img src="https://www.figma.com/api/mcp/asset/491ab88a-90c8-42d0-93ef-e275e9df7b86" alt="" /></div></div>
+        </div>
+      </div>
+      <div class="scroll-body">
+        <div class="card card-large credit-card-tappable" id="credit-spends-card">
+          <div style="display:flex;flex-direction:column;gap:24px">
+            <span class="card-sub-label">Spends · 5 Jun – 4 Jul</span>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div class="card-amount">₹1,00,550</div>
+              <div class="insight-row">
+                <div class="insight">
+                  <img src="https://www.figma.com/api/mcp/asset/b4fd5c83-1f95-42d6-8d3b-e94233ffc92c" alt="" />
+                  <span class="insight-text-grey">Paid ₹370 to Uber</span>
+                </div>
+                <div class="insight">
+                  <img src="https://www.figma.com/api/mcp/asset/5b67341f-0393-460d-8ec9-d1353657e94a" alt="" />
+                  <span class="insight-text-grey">Paid ₹180 to Sampath stores</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="marketing-sub">
+            <img src="https://www.figma.com/api/mcp/asset/ef131c3b-66f6-4f92-b119-36a4bb800ce2" alt="" />
+            <div style="flex:1">
+              <div class="marketing-sub-title">Invite a friend</div>
+              <div class="marketing-sub-sub">You have the power</div>
+            </div>
+          </div>
+          <!-- 🟡 EXPLORE: Pay-bills hint inside Spends card -->
+          <div class="exp-credit-spends-hint" data-exp-bills="credit-spends-hint">
+            <span>Pay your bills with slice card → earn 5% extra cashback this month</span>
+          </div>
+        </div>
+
+        <div class="card spark-card credit-card-tappable" id="credit-spark-card">
+          <div class="spark-top">
+            <img class="spark-avatar-svg" src="./Assets/Spark avatar.svg" alt="" />
+            <div style="flex:1">
+              <div class="spark-title">Activate spark</div>
+              <div class="spark-sub">New offers live every week</div>
+            </div>
+          </div>
+          <div class="spark-divider"></div>
+          <div class="spark-bottom">
+            <div class="spark-logos">
+              <img src="https://www.figma.com/api/mcp/asset/9e53c220-89db-4e7f-8d8c-8844d635d11d" alt="" />
+              <img src="https://www.figma.com/api/mcp/asset/b2a58e85-b20a-4eaf-a81b-d410fd4c64c8" alt="" />
+              <img src="https://www.figma.com/api/mcp/asset/122e39f2-c2bd-4320-b4e9-4320fec237f6" alt="" />
+              <img src="https://www.figma.com/api/mcp/asset/3a886990-b440-4ce9-9776-07a505607406" alt="" />
+              <img src="https://www.figma.com/api/mcp/asset/9eb01c72-c556-410c-ae00-bdf6f41b6eba" alt="" style="margin-right:0" />
+            </div>
+            <span class="spark-count">5 sparks live this week</span>
+            <img class="spark-chev" src="./Assets/Chevron Icon.svg" alt="" />
+          </div>
+        </div>
+
+        <!-- 🟡 EXPLORE: Pay bills tile card -->
+        <div class="exp-credit-bills-card" data-exp-bills="credit-tile">
+          <div class="icon-row">
+            <div class="mini-avatar" style="background:#e23744">A</div>
+            <div class="mini-avatar" style="background:#0a7e3a">B</div>
+            <div class="mini-avatar" style="background:#e60000">J</div>
+          </div>
+          <div class="body">
+            <div class="title">Pay your bills</div>
+            <div class="sub">4 bills due this cycle</div>
+          </div>
+          <div class="tag">5% extra</div>
+        </div>
+
+        <img class="meet-card-svg" src="./Assets/meet your card.svg" alt="" />
+      </div>
+    </div>
+
+    <!-- ════════════ AVC (4) ════════════ -->
+    <div class="screen" id="screen-4">
+      <img class="status-bar-svg dark" src="./Assets/Status Bar.svg" alt="" />
+      <div class="app-bar">
+        <span class="app-bar-title">Activity</span>
+        <div class="app-bar-actions">
+          <div class="icon-btn"><div class="avatar"><img src="https://www.figma.com/api/mcp/asset/491ab88a-90c8-42d0-93ef-e275e9df7b86" alt="" /></div></div>
+        </div>
+      </div>
+      <div class="avc-content">
+        <div class="search-row">
+          <div class="search-pill">
+            <img src="https://www.figma.com/api/mcp/asset/04a86dc0-fe87-45ca-9c67-43b826da42f9" alt="" />
+            <span>Search</span>
+          </div>
+          <div class="filter-btn">
+            <img src="https://www.figma.com/api/mcp/asset/2d2c2022-4e23-4481-bbed-5a0bae7bbfc0" alt="" />
+          </div>
+        </div>
+        <!-- 🟡 EXPLORE: Smart bill reminder -->
+        <div class="exp-avc-banner" data-exp-bills="avc-banner">
+          <div class="icon">⚡</div>
+          <div class="body">
+            <div class="title">BESCOM electricity due in 3 days</div>
+            <div class="sub">Last month you paid ₹2,100</div>
+          </div>
+          <div class="cta">Pay now</div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-avatar"><img src="https://www.figma.com/api/mcp/asset/9c9bc840-91b8-40a5-b401-87853f870a5f" alt="" /></div>
+          <div class="txn-info"><div class="txn-name">Sanjay S.</div><div class="txn-date">24 Jan '26</div></div>
+          <div class="txn-amount positive">₹1</div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-avatar" style="background:#fff0e0;color:#ff9f3d">S</div>
+          <div class="txn-info"><div class="txn-name">Sunny Shop</div><div class="txn-date">23 Jan '26</div></div>
+          <div class="txn-amount positive">₹18</div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-avatar" style="background:#e0f4e8">
+            <img class="inner-svg" src="https://www.figma.com/api/mcp/asset/2eeaa55d-6b77-45ea-9c72-1beeba9ae8da" alt="" />
+          </div>
+          <div class="txn-info"><div class="txn-name">Dec savings interest</div><div class="txn-date">21 Jan '26</div></div>
+          <div class="txn-amount neutral">₹0.05</div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-avatar"><img src="https://www.figma.com/api/mcp/asset/b43e4e3d-d253-4db3-9bd1-8160f5ad177e" alt="" /></div>
+          <div class="txn-info"><div class="txn-name">Deepika Jain</div><div class="txn-date">21 Jan '26</div></div>
+          <div class="txn-amount positive">₹10,000</div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-avatar" style="background:#e0f4e8">
+            <img class="inner-svg" src="https://www.figma.com/api/mcp/asset/efd22233-7ccc-46cf-8111-30acc82e946b" alt="" />
+          </div>
+          <div class="txn-info"><div class="txn-name">Jan fires</div><div class="txn-date">20 Jan '26</div></div>
+          <div class="txn-amount neutral">₹129</div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-avatar" style="background:#e6edf9;color:#2b6acf">H</div>
+          <div class="txn-info">
+            <div class="txn-name">Help Mate Service</div>
+            <div class="txn-date">20 Jan '26 <span class="exp-pay-again-pill" data-exp-bills="avc-pay-again">Pay again</span></div>
+          </div>
+          <div class="txn-amount positive">₹18,450</div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-avatar" style="background:#e0f4e8">
+            <img class="inner-svg" src="https://www.figma.com/api/mcp/asset/efd22233-7ccc-46cf-8111-30acc82e946b" alt="" />
+          </div>
+          <div class="txn-info"><div class="txn-name">Dec fires</div><div class="txn-date">31 Dec '25</div></div>
+          <div class="txn-amount neutral">₹129</div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-avatar" style="color:#da535a">Z</div>
+          <div class="txn-info"><div class="txn-name">Zomato</div><div class="txn-date">20 Jan '26</div></div>
+          <div class="txn-amount positive">₹219.61</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /slider -->
+
+  <!-- SHARED NAV -->
+  <div id="shared-nav">
+    <div class="nav-bg-purple" id="nav-bg-purple"></div>
+    <div class="nav-bg-white"   id="nav-bg-white"></div>
+    <div class="nav-content">
+      <div class="nav-row" id="nav-row"></div>
+      <div class="gesture-bar">
+        <div class="gesture-pill" id="gesture-pill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ L1 · CREDIT CARD ═════════ -->
+  <div class="l1-overlay" id="l1-credit">
+    <img class="status-bar-svg dark" src="./Assets/Status Bar.svg" alt="" />
+    <div class="l1-app-bar">
+      <div class="l1-nav-icon l1-back-btn" id="l1-credit-back">
+        <img src="./Assets/Nav icon.svg" width="48" height="48" alt="" style="display:block" />
+      </div>
+      <div style="flex:1"></div>
+      <div class="l1-nav-icon">
+        <img src="./Assets/pie.svg" width="48" height="48" alt="" style="display:block" />
+      </div>
+    </div>
+    <div class="l1-body">
+      <div class="l1-header">
+        <div class="l1-card-block">
+          <div class="l1-card-header">
+            <div class="l1-date">
+              <span class="l1-date-text">21 Apr - 20 May</span>
+            </div>
+            <div class="l1-amount">₹76,039</div>
+          </div>
+          <div class="l1-insight-link" id="l1-unbilled-link" style="cursor:pointer">View unbilled spends</div>
+        </div>
+
+        <div class="l1-btn-group exp-three-btn">
+          <div class="l1-btn">
+            <img src="./Assets/QR.svg" width="24" height="24" alt="" />
+            <span class="l1-btn-text">Scan QR</span>
+          </div>
+          <div class="l1-btn">
+            <img src="./Assets/Withdraw.svg" width="24" height="24" alt="" />
+            <span class="l1-btn-text">Withdraw</span>
+          </div>
+          <!-- 🟡 EXPLORE: Pay bills as 3rd action -->
+          <div class="l1-btn" data-exp-bills="credit-l1-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="4" width="18" height="16" rx="2" stroke="rgba(0,0,0,.9)" stroke-width="1.6"/>
+              <path d="M3 9h18" stroke="rgba(0,0,0,.9)" stroke-width="1.6"/>
+              <path d="M7 14h6M7 17h4" stroke="rgba(0,0,0,.9)" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            <span class="l1-btn-text">Pay bills</span>
+          </div>
+        </div>
+
+        <div class="l1-todo">
+          <img class="l1-todo-avatar-svg" src="./Assets/Invite avatar.svg" width="40" height="40" alt="" />
+          <div class="l1-todo-content">
+            <div class="l1-todo-title">Invite &amp; earn ₹250</div>
+            <div class="l1-todo-sub">Bring your friends to slice</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPAYMENT -->
+      <div class="l1-section">
+        <div class="l1-section-header">Repayment</div>
+        <div class="l1-list-item">
+          <div class="l1-li-content">
+            <div class="l1-li-sub">May statement</div>
+            <div class="l1-li-title">₹10,000</div>
+            <div class="l1-li-due">Due in 5 days</div>
+          </div>
+          <div class="l1-repay-btn">Repay</div>
+        </div>
+      </div>
+
+      <!-- PAYMENT MODES -->
+      <div class="l1-section">
+        <div class="l1-section-header">Payment modes</div>
+        <div class="l1-list-item">
+          <img class="l1-li-avatar-svg" src="./Assets/Card avatar.svg" width="40" height="40" alt="" />
+          <div class="l1-li-content">
+            <div class="l1-li-sub">Card</div>
+            <div class="l1-li-title-regular">xx 3323</div>
+          </div>
+        </div>
+        <div class="l1-list-item">
+          <img class="l1-li-avatar-svg" src="./Assets/UPI avatar.svg" width="40" height="40" alt="" />
+          <div class="l1-li-content">
+            <div class="l1-li-sub">UPI</div>
+            <div class="l1-li-title-regular">48383929@slc</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MORE -->
+      <div class="l1-section">
+        <div class="l1-section-header">More</div>
+        <div class="l1-list-item">
+          <div class="l1-li-content"><div class="l1-li-title-regular">EMIs</div></div>
+        </div>
+        <div class="l1-list-item">
+          <div class="l1-li-content"><div class="l1-li-title-regular">Autopay</div></div>
+          <div class="l1-tag l1-tag-info">Set up</div>
+        </div>
+        <div class="l1-list-item">
+          <div class="l1-li-content"><div class="l1-li-title-regular">Statement</div></div>
+        </div>
+        <div class="l1-list-item">
+          <div class="l1-li-content"><div class="l1-li-title-regular">Share access code</div></div>
+          <div class="l1-tag l1-tag-brand">For you</div>
+        </div>
+      </div>
+    </div>
+    <div class="l1-gesture"><div class="l1-gesture-pill"></div></div>
+  </div>
+
+  <!-- ═════════ L1 · SPARK ═════════ -->
+  <div class="l1-overlay" id="l1-spark">
+    <img class="status-bar-svg dark" src="./Assets/Status Bar.svg" alt="" />
+    <div class="l1-app-bar">
+      <div class="l1-nav-icon l1-back-btn" id="l1-spark-back">
+        <img src="./Assets/Nav icon.svg" width="48" height="48" alt="" style="display:block" />
+      </div>
+      <div class="l1-app-bar-title">spark</div>
+      <!-- DLS · Status/Icon-1 (Info) — tertiary -->
+      <div class="l1-nav-icon">
+        <svg width="24" height="24" viewBox="16 16 24 24" fill="none">
+          <path d="M28 27C28.69 27 29.25 27.56 29.25 28.25V31.5801C29.25 32.27 28.69 32.8301 28 32.8301C27.31 32.8301 26.75 32.27 26.75 31.5801V28.25C26.75 27.56 27.31 27 28 27Z" fill="rgba(0,0,0,.5)"/>
+          <path d="M28 23.4297C28.6899 23.4297 29.2499 23.9898 29.25 24.6797C29.25 25.3697 28.69 25.9297 28 25.9297C27.31 25.9297 26.75 25.3697 26.75 24.6797C26.7501 23.9898 27.3101 23.4297 28 23.4297Z" fill="rgba(0,0,0,.5)"/>
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M28 18C33.52 18 38 22.48 38 28C38 33.52 33.52 38 28 38C22.48 38 18 33.52 18 28C18 22.48 22.48 18 28 18ZM28 20.5C23.86 20.5 20.5 23.86 20.5 28C20.5 32.14 23.86 35.5 28 35.5C32.14 35.5 35.5 32.14 35.5 28C35.5 23.86 32.14 20.5 28 20.5Z" fill="rgba(0,0,0,.5)"/>
+        </svg>
+      </div>
+      <!-- DLS · Money/Icon-7 (Rupee) — tertiary -->
+      <div class="l1-nav-icon">
+        <svg width="24" height="24" viewBox="16 16 24 24" fill="none">
+          <path d="M37.9981 28.015C37.9981 22.4922 33.5081 18 27.9881 18C25.2181 18 22.5481 19.1606 20.6581 21.1916C20.1981 21.6818 20.2281 22.4522 20.7181 22.9125C21.2081 23.3727 21.9781 23.3427 22.4381 22.8524C23.8881 21.2916 25.8481 20.4412 27.9781 20.4412C32.1481 20.4412 35.5381 23.8329 35.5381 28.005C35.5381 32.1771 32.1481 35.5688 27.9781 35.5688C25.8481 35.5688 23.8881 34.7084 22.4381 33.1476C21.9781 32.6573 21.2081 32.6273 20.7181 33.0875C20.4581 33.3277 20.3281 33.6578 20.3281 33.978C20.3281 34.2781 20.4381 34.5783 20.6581 34.8084C22.5481 36.8394 25.2181 38 27.9881 38C33.4981 38 37.9981 33.5178 37.9981 27.995V28.015Z" fill="rgba(0,0,0,.5)"/>
+          <path d="M20.73 30.1374C20.34 28.7668 20.34 27.276 20.73 25.9153C20.92 25.265 20.55 24.5947 19.9 24.4046C19.25 24.2145 18.58 24.5847 18.39 25.235C18.13 26.1254 18 27.0659 18 28.0164C18 28.9669 18.13 29.9073 18.39 30.8078C18.58 31.4581 19.25 31.8283 19.9 31.6382C20.55 31.4481 20.92 30.7778 20.73 30.1274V30.1374Z" fill="rgba(0,0,0,.5)"/>
+          <path d="M31.1717 24.3469H24.9517C24.4117 24.3469 23.9517 24.7871 23.9517 25.3474C23.9517 25.9077 24.3917 26.3479 24.9517 26.3479H27.8917C28.3117 26.3479 28.6617 26.6881 28.6617 27.1183C28.6617 27.5485 28.3217 27.8887 27.8917 27.8887H24.9517C24.5417 27.8887 24.1717 28.1388 24.0117 28.539C23.8617 28.9192 23.9717 29.3694 24.2817 29.6396L28.1817 33.1013C28.3617 33.2614 28.5917 33.3514 28.8517 33.3514C29.1317 33.3514 29.4017 33.2314 29.6017 33.0213C29.7817 32.8212 29.8717 32.571 29.8517 32.2909C29.8317 32.0208 29.7217 31.7806 29.5217 31.6005L27.5817 29.8897H27.8917C29.4117 29.8897 30.6417 28.6491 30.6417 27.1283C30.6417 26.8682 30.6017 26.6181 30.5417 26.3679H31.1617C31.7017 26.3679 32.1617 25.9277 32.1617 25.3674C32.1617 24.8072 31.7217 24.3669 31.1617 24.3669L31.1717 24.3469Z" fill="rgba(0,0,0,.5)"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="l1-body">
+      <!-- Empty state card -->
+      <div class="spark-empty-card">
+        <svg class="base-svg" viewBox="0 0 248 248" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="246" height="246" rx="23" stroke="rgba(0,0,0,.08)" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <path d="M1 24v-8a15 15 0 0115-15h8" stroke="rgba(0,0,0,.2)" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <path d="M247 24v-8a15 15 0 00-15-15h-8" stroke="rgba(0,0,0,.2)" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <path d="M1 224v8a15 15 0 0015 15h8" stroke="rgba(0,0,0,.2)" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <path d="M247 224v8a15 15 0 01-15 15h-8" stroke="rgba(0,0,0,.2)" stroke-width="2" stroke-linecap="round" fill="none"/>
+        </svg>
+        <div class="dashed-circle"></div>
+        <div class="no-spark">No spark active</div>
+        <div class="credit-card-label">Credit card</div>
+      </div>
+
+      <!-- Horizontal scrollable brand cards -->
+      <div class="spark-brand-scroll">
+        <div class="spark-brand-card">
+          <div class="spark-brand-name">Nykaa</div>
+          <div class="spark-cashback pink">Get 10%<br/>cashback</div>
+          <div class="spark-timer">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8.5" r="6" stroke="rgba(0,0,0,.4)" stroke-width="1.3"/><path d="M8 5v3.5l2 1.5" stroke="rgba(0,0,0,.4)" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span>2 days left</span>
+          </div>
+          <div class="spark-brand-logo" style="background:#fc2779;color:#fff;font-family:'Rubik',sans-serif;font-style:italic;font-weight:700;font-size:18px;line-height:1">N</div>
+        </div>
+
+        <div class="spark-brand-card">
+          <div class="spark-brand-name">Nike</div>
+          <div class="spark-cashback black">Get ₹250<br/>cashback</div>
+          <div class="spark-timer">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8.5" r="6" stroke="rgba(0,0,0,.4)" stroke-width="1.3"/><path d="M8 5v3.5l2 1.5" stroke="rgba(0,0,0,.4)" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span>2 days left</span>
+          </div>
+          <div class="spark-brand-logo" style="background:#000">
+            <svg width="22" height="9" viewBox="0 0 22 9" fill="none"><path d="M2 7L20 1C16 4 11 8 5 8L2 7z" fill="#fff"/></svg>
+          </div>
+        </div>
+
+        <div class="spark-brand-card">
+          <div class="spark-brand-name">Homecenter</div>
+          <div class="spark-cashback olive">Get ₹50<br/>cashback</div>
+          <div class="spark-timer">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8.5" r="6" stroke="rgba(0,0,0,.4)" stroke-width="1.3"/><path d="M8 5v3.5l2 1.5" stroke="rgba(0,0,0,.4)" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span>2 days left</span>
+          </div>
+          <div class="spark-brand-logo" style="background:#94a720">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 11l7-6 7 6v6H3z" stroke="#fff" stroke-width="1.6" fill="none"/></svg>
+          </div>
+        </div>
+
+        <div class="spark-brand-card">
+          <div class="spark-brand-name">Starbucks</div>
+          <div class="spark-cashback dgreen">Get 20%<br/>cashback</div>
+          <div class="spark-timer">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8.5" r="6" stroke="rgba(0,0,0,.4)" stroke-width="1.3"/><path d="M8 5v3.5l2 1.5" stroke="rgba(0,0,0,.4)" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span>2 days left</span>
+          </div>
+          <div class="spark-brand-logo" style="background:#286043">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#fff" stroke-width="1.4"/><circle cx="11" cy="11" r="3.5" stroke="#fff" stroke-width="1.2"/></svg>
+          </div>
+        </div>
+
+        <div class="spark-brand-card">
+          <div class="spark-brand-name">Flipkart</div>
+          <div class="spark-cashback blue">Get ₹300<br/>cashback</div>
+          <div class="spark-timer">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8.5" r="6" stroke="rgba(0,0,0,.4)" stroke-width="1.3"/><path d="M8 5v3.5l2 1.5" stroke="rgba(0,0,0,.4)" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span>2 days left</span>
+          </div>
+          <div class="spark-brand-logo" style="background:#107bd4;color:#ffe24c;font-family:'Rubik',sans-serif;font-weight:700;font-size:16px;line-height:1">f</div>
+        </div>
+      </div>
+    </div>
+    <div class="l1-gesture"><div class="l1-gesture-pill"></div></div>
+  </div>
+
+  <!-- ═════════ L2 · UNBILLED SPENDS ═════════ -->
+  <div class="l1-overlay" id="l2-unbilled" style="z-index:31">
+    <img class="status-bar-svg dark" src="./Assets/Status Bar.svg" alt="" />
+    <div class="l1-app-bar">
+      <div class="l1-nav-icon l1-back-btn" id="l2-unbilled-back">
+        <img src="./Assets/Nav icon.svg" width="48" height="48" alt="" style="display:block" />
+      </div>
+      <div class="l1-app-bar-title">Unbilled spends</div>
+      <div style="width:96px"></div>
+    </div>
+
+    <!-- Scrollable list — Excess balance is always the first item but scrolls with everything else -->
+    <div class="ub-list">
+      <div class="ub-excess">
+        <div class="ub-excess-row">
+          <div class="ub-excess-avatar">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8" stroke="#fff" stroke-width="1.6" fill="none"/>
+              <path d="M10 6v4l3 2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="ub-body">
+            <div class="ub-name">Excess balance</div>
+            <div class="ub-sub">2 transactions</div>
+          </div>
+          <div class="ub-amount dark" id="ub-excess-amount">₹500</div>
+        </div>
+        <div class="ub-excess-tag">Transferred to savings xx1234</div>
+      </div>
+      <div id="ub-list-container"></div>
+    </div>
+  </div>
+
+  <!-- ═════════ L3 · TRANSACTION DETAIL ═════════ -->
+  <div class="l1-overlay" id="l3-txn-detail" style="z-index:32">
+    <img class="status-bar-svg dark" src="./Assets/Status Bar.svg" alt="" />
+    <div class="l1-app-bar">
+      <div class="l1-nav-icon l1-back-btn" id="l3-txn-back">
+        <img src="./Assets/Nav icon.svg" width="48" height="48" alt="" style="display:block" />
+      </div>
+      <div class="l1-app-bar-title"></div>
+      <div style="width:48px"></div>
+    </div>
+
+    <div class="l1-body">
+      <!-- Transaction Info block -->
+      <div class="td-info">
+        <div class="td-amount-row">
+          <div class="td-amount-text" id="td-amount-text">Paid ₹0</div>
+          <div class="td-status-icon">
+            <img id="td-status-img" src="./Assets/Success Icon.svg" width="56" height="56" alt="" style="display:block" />
+          </div>
+        </div>
+        <div class="td-meta-row">
+          <div class="td-meta">
+            <div class="td-meta-name" id="td-meta-name">To Merchant</div>
+            <div class="td-meta-time" id="td-meta-time">29 Apr '26, 02:30 PM</div>
+          </div>
+          <div class="td-link-btn" id="td-action-btn">Pay again</div>
+        </div>
+        <div class="td-notes-pill">
+          <span class="td-notes-label">Notes:</span>
+          <span class="td-notes-value" id="td-notes-value">slice in 3</span>
+        </div>
+      </div>
+
+      <div class="td-big-divider"></div>
+
+      <!-- Category row -->
+      <div class="td-section-row">
+        <div class="av">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M5 6h10l-1 11a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6z" stroke="rgba(0,0,0,.7)" stroke-width="1.4" fill="none"/>
+            <path d="M7 6V4.5A2.5 2.5 0 0110 2a2.5 2.5 0 013 2.5V6" stroke="rgba(0,0,0,.7)" stroke-width="1.4" fill="none"/>
+          </svg>
+        </div>
+        <div class="lbl" id="td-category">Shopping</div>
+        <div class="td-link-btn" style="padding:0">Edit</div>
+      </div>
+
+      <div class="td-big-divider"></div>
+
+      <!-- Details section -->
+      <div class="td-section-header">
+        <h3>Details</h3>
+        <div class="td-link-btn" style="padding:0">Share</div>
+      </div>
+      <div class="td-divider-thin"></div>
+
+      <div class="td-kv-row">
+        <div class="td-kv-content">
+          <div class="td-kv-title" id="td-from-label">From: slice cc</div>
+          <div class="td-kv-sub" id="td-from-sub">xx2831</div>
+        </div>
+      </div>
+      <div class="td-kv-row">
+        <div class="td-kv-content">
+          <div class="td-kv-title" id="td-to-label">To: Merchant</div>
+          <div class="td-kv-sub" id="td-to-sub">8789172620@slc</div>
+        </div>
+        <div class="td-kv-trailing">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="6" y="2.5" width="11" height="14" rx="2" stroke="rgba(0,0,0,.7)" stroke-width="1.4"/><path d="M14 17.5v.5a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h.5" stroke="rgba(0,0,0,.7)" stroke-width="1.4"/></svg>
+        </div>
+      </div>
+      <div class="td-kv-row">
+        <div class="td-kv-content">
+          <div class="td-kv-title">UPI Ref ID</div>
+          <div class="td-kv-sub" id="td-upi-ref">567898765929</div>
+        </div>
+        <div class="td-kv-trailing">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="6" y="2.5" width="11" height="14" rx="2" stroke="rgba(0,0,0,.7)" stroke-width="1.4"/><path d="M14 17.5v.5a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h.5" stroke="rgba(0,0,0,.7)" stroke-width="1.4"/></svg>
+        </div>
+      </div>
+      <div class="td-kv-row">
+        <div class="td-kv-content">
+          <div class="td-kv-title">Transaction ID</div>
+          <div class="td-kv-sub" id="td-txn-id">NEF7bjwedtwfeyb243</div>
+        </div>
+        <div class="td-kv-trailing">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="6" y="2.5" width="11" height="14" rx="2" stroke="rgba(0,0,0,.7)" stroke-width="1.4"/><path d="M14 17.5v.5a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h.5" stroke="rgba(0,0,0,.7)" stroke-width="1.4"/></svg>
+        </div>
+      </div>
+      <div class="td-kv-row" id="td-emi-row">
+        <div class="td-kv-content">
+          <div class="td-kv-title">View EMIs</div>
+        </div>
+        <div class="td-kv-trailing">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M7 4l6 6-6 6" stroke="rgba(0,0,0,.7)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+
+      <div class="td-big-divider"></div>
+
+      <div class="td-kv-row">
+        <div class="td-kv-content">
+          <div class="td-kv-title td-add-notes">Add notes</div>
+        </div>
+      </div>
+
+      <div class="td-big-divider"></div>
+
+      <div class="td-contact"><span class="td-contact-text">Contact us</span></div>
+      <div class="td-footer">
+        <img src="./Assets/Rupay UPI.svg" width="48" height="28" alt="RuPay on UPI" style="display:block" />
+      </div>
+    </div>
+    <div class="l1-gesture"><div class="l1-gesture-pill"></div></div>
+  </div>
+</div>
+</div><!-- /phone-wrapper -->
+
+
+<script>
+  const root = document.documentElement;
+
+  const cfg = {
+    slideDur: 350,
+    slideEase: 'cubic-bezier(.4,0,.2,1)',
+    navDur: 300,
+    navEase: 'cubic-bezier(.4,0,.2,1)',
+    spacing: 72,
+    activeSize: 64,
+    inactiveSize: 40,
+    inactiveOp: 0.85,
+    swipe: 60,
+  };
+  function applyCSS() {
+    root.style.setProperty('--nav-dur',  cfg.navDur + 'ms');
+    root.style.setProperty('--nav-ease', cfg.navEase);
+  }
+  applyCSS();
+
+  /* Real Figma asset URLs for nav icons */
+  const A_BANKING_ACTIVE    = "https://www.figma.com/api/mcp/asset/d5015eb0-129a-4440-bc31-39aefc50fa5f"; // Account Active
+  const A_EXPLORE_BIG       = "https://www.figma.com/api/mcp/asset/1b13c474-6700-4437-b265-0fad3e486085"; // Layer1 - large white (active)
+  const A_EXPLORE_SMALL     = "https://www.figma.com/api/mcp/asset/6abfbe7c-ceea-4a84-9f61-b1b3dae2e8ae"; // Layer1 - small (inactive)
+  const A_EXPLORE_ON_PURPLE = "https://www.figma.com/api/mcp/asset/048dd375-cfb5-42fd-89d6-d6c3e98b3559"; // Layer1 - on purple
+  const A_QR                = "https://www.figma.com/api/mcp/asset/cddc1576-bb27-47f3-94bb-0981d9900537"; // home QR
+  const A_QR_RING           = "https://www.figma.com/api/mcp/asset/110d5159-c09b-4365-aa59-59097eaf1ca9"; // selected ellipse ring
+  const A_BORROW_BIG        = "https://www.figma.com/api/mcp/asset/ac044a6b-f592-4795-8f5f-9ea508b2bd1b"; // borrow active
+  const A_BORROW_SMALL      = "https://www.figma.com/api/mcp/asset/039d3ab9-7f90-4fa8-855d-a4fff8e8ff32"; // borrow inactive
+  const A_BORROW_ON_PURPLE  = "https://www.figma.com/api/mcp/asset/cd607e6d-fb01-4964-93ce-1207908b4545";
+  const A_ACTIVITY_BIG      = "https://www.figma.com/api/mcp/asset/df037976-ccbb-4edd-8d73-559768a86849"; // avc active
+  const A_ACTIVITY_SMALL    = "https://www.figma.com/api/mcp/asset/df037976-ccbb-4edd-8d73-559768a86849"; // avc inactive
+  const A_ACTIVITY_ON_PURPLE= "https://www.figma.com/api/mcp/asset/5f8fb130-a1d3-4674-bfa5-8571318a4583";
+
+  const NAV_DEFS = [
+    { // 0 Banking
+      active:        `<img src="${A_BANKING_ACTIVE}" style="width:32px;height:32px" />`,
+      inactiveWhite: `<img src="${A_BANKING_ACTIVE}" style="width:24px;height:24px" />`,
+      inactivePurple:`<img src="${A_BANKING_ACTIVE}" style="width:24px;height:24px;filter:brightness(10)" />`,
+    },
+    { // 1 Explore — sparkle
+      active:        `<img src="${A_EXPLORE_BIG}"   style="width:32px;height:32px" />`,
+      inactiveWhite: `<img src="${A_EXPLORE_SMALL}" style="width:24px;height:24px" />`,
+      inactivePurple:`<img src="${A_EXPLORE_ON_PURPLE}" style="width:24px;height:24px" />`,
+    },
+    { // 2 Payments — scan (active uses Enabled.svg which already has the ring built in)
+      active:        `<img src="./Assets/Enabled.svg" style="width:72px;height:72px;display:block" />`,
+      inactiveWhite: `<img src="./Assets/scan.svg" style="width:40px;height:40px;display:block" />`,
+      inactivePurple:`<img src="./Assets/scan.svg" style="width:40px;height:40px;display:block;filter:brightness(10);opacity:.85" />`,
+    },
+    { // 3 Credit — borrow / arrow
+      active:        `<img src="${A_BORROW_BIG}"   style="width:32px;height:32px" />`,
+      inactiveWhite: `<img src="${A_BORROW_SMALL}" style="width:24px;height:24px" />`,
+      inactivePurple:`<img src="${A_BORROW_ON_PURPLE}" style="width:24px;height:24px" />`,
+    },
+    { // 4 AVC — activity (rotated 90deg)
+      active:        `<img src="${A_ACTIVITY_BIG}"   style="width:32px;height:32px;transform:rotate(90deg)" />`,
+      inactiveWhite: `<img src="${A_ACTIVITY_SMALL}" style="width:24px;height:24px;transform:rotate(90deg)" />`,
+      inactivePurple:`<img src="${A_ACTIVITY_ON_PURPLE}" style="width:24px;height:24px;transform:rotate(90deg)" />`,
+    },
+  ];
+
+  /* Build nav icons */
+  const navRow = document.getElementById('nav-row');
+  const navIconEls = NAV_DEFS.map((def, i) => {
+    const el = document.createElement('div');
+    el.className = 'nav-icon';
+    el.addEventListener('click', () => goTo(i));
+    navRow.appendChild(el);
+    return el;
+  });
+
+  const SCREENS = 5;
+  const DEFAULT = 2;
+  let current = DEFAULT;
+
+  const slider      = document.getElementById('slider');
+  const phone       = document.getElementById('phone');
+  const navBgP      = document.getElementById('nav-bg-purple');
+  const navBgW      = document.getElementById('nav-bg-white');
+  const gesturePill = document.getElementById('gesture-pill');
+
+  function goTo(idx, animate = true) {
+    if (idx < 0 || idx >= SCREENS) return;
+    const wasPay = current === 2;
+    current = idx;
+    slider.style.transition = animate
+      ? `transform ${cfg.slideDur}ms ${cfg.slideEase}`
+      : 'none';
+    slider.style.transform = `translateX(-${idx * 360}px)`;
+    updateNav(idx);
+
+    // Re-trigger scan icon animation each time we land on Payments
+    if (idx === 2 && animate) {
+      const payNav = document.querySelector('.pay-bottom-nav');
+      if (payNav) {
+        payNav.classList.remove('animate-in');
+        void payNav.offsetWidth; // force reflow
+        payNav.classList.add('animate-in');
+      }
+    }
+  }
+
+  function updateNav(activeIdx) {
+    const isPay = activeIdx === 2;
+    const CENTER_X = 180;
+    // Payments has its own bottom nav SVG inside the screen — hide shared nav
+    document.getElementById('shared-nav').style.opacity = isPay ? '0' : '1';
+    navBgP.style.opacity = isPay ? '1' : '0';
+    navBgW.style.opacity = isPay ? '0' : '1';
+    gesturePill.style.background = isPay ? 'rgba(255,255,255,.6)' : 'rgba(0,0,0,.3)';
+
+    navIconEls.forEach((el, i) => {
+      const rel      = i - activeIdx;
+      const x        = CENTER_X + rel * cfg.spacing;
+      const isActive = i === activeIdx;
+      const isPaymentsActive = isActive && i === 2;
+      // Payments active uses Enabled.svg which is 72x72 (the ring is baked in)
+      const size     = isPaymentsActive ? 72 : (isActive ? cfg.activeSize : cfg.inactiveSize);
+      const dist     = Math.abs(rel);
+      const opacity  = dist > 2 ? 0 : (isActive ? 1 : cfg.inactiveOp - dist * 0.05);
+
+      let bg, color, boxShadow;
+      const isInactiveScan = !isActive && i === 2;
+      if (isPaymentsActive || isInactiveScan) {
+        // SVG has its own circle / ring — no extra background, no shadow
+        bg = 'transparent';
+        color = 'rgba(0,0,0,.9)';
+        boxShadow = 'none';
+      } else if (isPay) {
+        bg = isActive ? '#fff' : 'rgba(255,255,255,.3)';
+        color = isActive ? 'rgba(0,0,0,.9)' : '#fff';
+        boxShadow = isActive ? '0 0 8px rgba(0,0,0,.12)' : 'none';
+      } else {
+        bg = isActive ? '#fff' : 'rgba(0,0,0,.1)';
+        color = isActive ? 'rgba(0,0,0,.9)' : '#fff';
+        boxShadow = isActive ? '0 0 8px rgba(0,0,0,.12)' : 'none';
+      }
+
+      el.style.cssText = `
+        left:${x}px;
+        width:${size}px;
+        height:${size}px;
+        transform:translate(-50%,-50%);
+        opacity:${opacity};
+        background:${bg};
+        color:${color};
+        box-shadow:${boxShadow};
+        transition:
+          left ${cfg.navDur}ms ${cfg.navEase},
+          width ${cfg.navDur}ms ${cfg.navEase},
+          height ${cfg.navDur}ms ${cfg.navEase},
+          opacity ${cfg.navDur}ms ${cfg.navEase},
+          background ${cfg.navDur}ms ${cfg.navEase},
+          color ${cfg.navDur}ms ${cfg.navEase};
+        pointer-events:${opacity < 0.05 ? 'none' : 'auto'};
+      `;
+
+      el.innerHTML = isActive
+        ? NAV_DEFS[i].active
+        : (isPay ? NAV_DEFS[i].inactivePurple : NAV_DEFS[i].inactiveWhite);
+    });
+  }
+
+  /* swipe */
+  let startX = 0, dragging = false, dragOffsetX = 0;
+  phone.addEventListener('touchstart', e => { startX = e.touches[0].clientX; dragging = true; dragOffsetX = 0; slider.style.transition = 'none'; }, { passive: true });
+  phone.addEventListener('touchmove', e => { if (!dragging) return; dragOffsetX = e.touches[0].clientX - startX; slider.style.transform = `translateX(${-(current * 360) + dragOffsetX}px)`; }, { passive: true });
+  phone.addEventListener('touchend', () => { if (!dragging) return; dragging = false; if (dragOffsetX < -cfg.swipe) goTo(current + 1); else if (dragOffsetX > cfg.swipe) goTo(current - 1); else goTo(current); });
+  phone.addEventListener('mousedown', e => { startX = e.clientX; dragging = true; dragOffsetX = 0; slider.style.transition = 'none'; });
+  window.addEventListener('mousemove', e => { if (!dragging) return; dragOffsetX = e.clientX - startX; slider.style.transform = `translateX(${-(current * 360) + dragOffsetX}px)`; });
+  window.addEventListener('mouseup', () => { if (!dragging) return; dragging = false; if (dragOffsetX < -cfg.swipe) goTo(current + 1); else if (dragOffsetX > cfg.swipe) goTo(current - 1); else goTo(current); });
+  document.addEventListener('keydown', e => { if (e.key === 'ArrowRight') goTo(current + 1); if (e.key === 'ArrowLeft') goTo(current - 1); });
+
+  /* ─── L1: Credit card ─── */
+  const l1Credit = document.getElementById('l1-credit');
+  const l1CreditBack = document.getElementById('l1-credit-back');
+  const creditSpendsCard = document.getElementById('credit-spends-card');
+
+  function openL1Credit() {
+    l1Credit.classList.add('open');
+  }
+  function closeL1Credit() {
+    l1Credit.classList.remove('open');
+  }
+  if (creditSpendsCard) creditSpendsCard.addEventListener('click', openL1Credit);
+  if (l1CreditBack) l1CreditBack.addEventListener('click', closeL1Credit);
+
+  /* ─── L1: Spark ─── */
+  const l1Spark = document.getElementById('l1-spark');
+  const l1SparkBack = document.getElementById('l1-spark-back');
+  const creditSparkCard = document.getElementById('credit-spark-card');
+  function openL1Spark()  { l1Spark.classList.add('open'); }
+  function closeL1Spark() { l1Spark.classList.remove('open'); }
+  if (creditSparkCard) creditSparkCard.addEventListener('click', openL1Spark);
+  if (l1SparkBack) l1SparkBack.addEventListener('click', closeL1Spark);
+
+  /* Scale the phone responsively — fills the preview panel's actual size with a small gutter */
+  function fitPhone() {
+    const wrap = document.getElementById('phone-wrapper');
+    if (!wrap) return;
+    const PHONE_H = 780;
+    const PHONE_W = 360;
+    const GUTTER = 24;
+    const vw = document.documentElement.clientWidth  || window.innerWidth;
+    const vh = document.documentElement.clientHeight || window.innerHeight;
+    const scaleH = Math.max(vh - GUTTER * 2, 200) / PHONE_H;
+    const scaleW = Math.max(vw - GUTTER * 2, 200) / PHONE_W;
+    const scale  = Math.min(scaleH, scaleW);
+    wrap.style.transform = `scale(${scale})`;
+  }
+  fitPhone();
+  window.addEventListener('resize', fitPhone);
+  // Also observe the body in case the preview panel resizes without firing window.resize
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(fitPhone).observe(document.documentElement);
+  }
+
+  /* ─── L2 · Unbilled spends (randomized) ───
+     Avatar tier maps to DLS decorative subtle bg + bold letter */
+  const BRANDS = [
+    { name: 'Nykaa',      tier: 'red',    initial: 'N', category: 'Shopping' },
+    { name: 'Zomato',     tier: 'red',    initial: 'Z', category: 'Food & dining' },
+    { name: 'Amazon',     tier: 'orange', initial: 'A', category: 'Shopping' },
+    { name: 'Swiggy',     tier: 'orange', initial: 'S', category: 'Food & dining' },
+    { name: 'Flipkart',   tier: 'blue',   initial: 'F', category: 'Shopping' },
+    { name: 'Myntra',     tier: 'purple', initial: 'M', category: 'Shopping' },
+    { name: 'BookMyShow', tier: 'red',    initial: 'B', category: 'Entertainment' },
+    { name: 'Uber',       tier: 'orange', initial: 'U', category: 'Travel' },
+    { name: 'Ola',        tier: 'green',  initial: 'O', category: 'Travel' },
+    { name: 'Blinkit',    tier: 'orange', initial: 'B', category: 'Groceries' },
+    { name: 'Starbucks',  tier: 'green',  initial: 'S', category: 'Food & dining' },
+    { name: 'Tata Cliq',  tier: 'blue',   initial: 'T', category: 'Shopping' },
+    { name: 'IRCTC',      tier: 'blue',   initial: 'I', category: 'Travel' },
+    { name: 'PVR Cinemas',tier: 'purple', initial: 'P', category: 'Entertainment' },
+  ];
+  // ~25% chance of a refund; otherwise debit. Method is always UPI (slice credit card is RuPay-on-UPI)
+  const TYPES = ['debit','debit','debit','refund','debit','debit','refund','debit'];
+  const APRIL_DAYS = [29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16];
+  const TIMES = ['10:30 AM', '11:45 AM', '01:15 PM', '02:30 PM', '04:00 PM', '06:15 PM', '08:45 PM', '09:30 PM'];
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function randAmount() {
+    const buckets = [
+      [80, 350], [200, 700], [500, 1500], [1000, 3000], [50, 200]
+    ];
+    const [lo, hi] = pick(buckets);
+    const v = Math.floor(lo + Math.random() * (hi - lo));
+    // Format as Indian thousands
+    return v;
+  }
+  function formatAmount(n) {
+    return '₹' + n.toLocaleString('en-IN');
+  }
+
+  // Generate 14 randomized unbilled transactions (2+ scrolls worth)
+  const unbilledTxns = (() => {
+    const out = [];
+    const usedDays = new Set();
+    for (let i = 0; i < 14; i++) {
+      const brand = pick(BRANDS);
+      let day;
+      do { day = pick(APRIL_DAYS); } while (false); // allow dupes
+      const date = day + " Apr '26";
+      const time = pick(TIMES);
+      const type = pick(TYPES); // 'debit' or 'refund'
+      const amount = randAmount();
+      out.push({
+        id: 'txn-' + i + '-' + Date.now(),
+        brand: brand.name,
+        tier: brand.tier,
+        initial: brand.initial,
+        category: brand.category,
+        date, time, type, amount,
+      });
+    }
+    // Sort by day (descending) for a coherent feed
+    out.sort((a, b) => parseInt(b.date) - parseInt(a.date));
+    return out;
+  })();
+
+  function txnHTML(tx) {
+    const isRefund = tx.type === 'refund';
+    // Refunds have no 2nd subtitle (no payment method). Debits show "UPI".
+    const subHTML = isRefund
+      ? `<div class="ub-sub">${tx.date}</div>`
+      : `<div class="ub-sub">${tx.date}<span class="dot"></span>UPI</div>`;
+    const amountClass = isRefund ? 'green' : 'dark';
+    const amountText = isRefund ? formatAmount(tx.amount) : formatAmount(tx.amount);
+    return `
+      <div class="ub-item" data-id="${tx.id}">
+        <div class="ub-avatar av-${tx.tier}">${tx.initial}</div>
+        <div class="ub-body">
+          <div class="ub-name">${tx.brand}</div>
+          ${subHTML}
+        </div>
+        <div class="ub-amount ${amountClass}">${amountText}</div>
+      </div>
+    `;
+  }
+
+  const ubListContainer = document.getElementById('ub-list-container');
+  if (ubListContainer) {
+    ubListContainer.innerHTML = unbilledTxns.map(txnHTML).join('');
+  }
+
+  const l2Unbilled = document.getElementById('l2-unbilled');
+  const l2UnbilledBack = document.getElementById('l2-unbilled-back');
+  const l1UnbilledLink = document.getElementById('l1-unbilled-link');
+  function openL2Unbilled()  { l2Unbilled.classList.add('open'); }
+  function closeL2Unbilled() { l2Unbilled.classList.remove('open'); }
+  if (l1UnbilledLink) l1UnbilledLink.addEventListener('click', openL2Unbilled);
+  if (l2UnbilledBack) l2UnbilledBack.addEventListener('click', closeL2Unbilled);
+
+  /* ─── L3 · Transaction detail ─── */
+  const l3Txn = document.getElementById('l3-txn-detail');
+  const l3TxnBack = document.getElementById('l3-txn-back');
+  function openL3Txn(tx) {
+    const isRefund = tx.type === 'refund';
+    const fAmt = formatAmount(tx.amount);
+
+    // Header
+    document.getElementById('td-amount-text').textContent = isRefund ? `Payment of ${fAmt} refunded` : `Paid ${fAmt}`;
+    document.getElementById('td-meta-name').textContent = isRefund ? `From ${tx.brand}` : `To ${tx.brand}`;
+    document.getElementById('td-meta-time').textContent = `${tx.date}, ${tx.time}`;
+
+    // Action button — only shown for debits (Figma refund screen has no action button)
+    const actionBtn = document.getElementById('td-action-btn');
+    actionBtn.textContent = 'Pay again';
+    actionBtn.style.display = isRefund ? 'none' : 'block';
+
+    // Notes pill
+    const NOTES_DEBIT = ['slice in 3', 'one-time', 'auto-pay', 'subscription'];
+    document.getElementById('td-notes-value').textContent =
+      isRefund ? `Refund for ${tx.brand}` : pick(NOTES_DEBIT);
+
+    // Category (always real category, not "Refund")
+    document.getElementById('td-category').textContent = tx.category;
+
+    // From / To rows — Figma spec
+    if (isRefund) {
+      document.getElementById('td-from-label').textContent = `From: ${tx.brand}`;
+      document.getElementById('td-from-sub').textContent = '8789172620@slc';
+      document.getElementById('td-to-label').textContent = 'To: iwnbru@nesf0.ifsc.ncpi';
+      document.getElementById('td-to-sub').textContent = 'NESFBL xx25';
+    } else {
+      document.getElementById('td-from-label').textContent = 'From: slice cc';
+      document.getElementById('td-from-sub').textContent = 'xx2831';
+      document.getElementById('td-to-label').textContent = `To: ${tx.brand}`;
+      document.getElementById('td-to-sub').textContent = '8789172620@slc';
+    }
+
+    // UPI Ref ID + Transaction ID — deterministic from txn id
+    const idSeed = (tx.id.replace(/[^0-9]/g, '') || '00000000').padEnd(12, '0').slice(-12);
+    document.getElementById('td-upi-ref').textContent = idSeed;
+    document.getElementById('td-txn-id').textContent = 'NEF' + idSeed.slice(-10) + 'wfeyb';
+
+    // Status icon (Success vs Refund)
+    document.getElementById('td-status-img').src = isRefund ? './Assets/Refund Icon.svg' : './Assets/Success Icon.svg';
+
+    // Last row: "View EMIs" (debit) vs "View original transaction" (refund)
+    const emiRow = document.getElementById('td-emi-row');
+    emiRow.querySelector('.td-kv-title').textContent = isRefund ? 'View original transaction' : 'View EMIs';
+
+    // Hide RuPay UPI footer on refund screens (Figma refund screen has no footer)
+    const footer = document.querySelector('#l3-txn-detail .td-footer');
+    if (footer) footer.style.display = isRefund ? 'none' : 'flex';
+
+    // Reset scroll to top of detail body each time
+    const body = l3Txn.querySelector('.l1-body');
+    if (body) body.scrollTop = 0;
+
+    l3Txn.classList.add('open');
+  }
+  function closeL3Txn() { l3Txn.classList.remove('open'); }
+  if (l3TxnBack) l3TxnBack.addEventListener('click', closeL3Txn);
+
+  // Wire up each unbilled item to open detail
+  document.querySelectorAll('#ub-list-container .ub-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      const tx = unbilledTxns.find(t => t.id === id);
+      if (tx) openL3Txn(tx);
+    });
+  });
+
+  // Wire tap handlers on the Payments static bottom nav SVG
+  document.querySelectorAll('.pay-nav-tap').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.go, 10);
+      if (!Number.isNaN(idx)) goTo(idx);
+    });
+  });
+
+  goTo(DEFAULT, false);
+</script>
+</body>
+</html>

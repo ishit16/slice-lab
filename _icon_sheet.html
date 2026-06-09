@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html><head><style>
+  body{margin:0;padding:20px;background:#1a1a1a;font-family:system-ui;color:#fff;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;font-size:13px}
+  .cell{background:#fff;padding:12px;border-radius:8px;text-align:center;color:#000}
+  .cell img{display:block;margin:0 auto 6px;width:100%;height:auto}
+  h2{grid-column:1/-1;color:#fff;padding-top:16px;font-weight:600;font-size:18px;margin:0}
+</style></head><body>
+<script>
+const sets = {
+  Interface: ['Arrow.svg','Action arrows.svg','Analytics.svg','Align.svg','Chevron.svg','Reload.svg','Other.svg','Language.svg','Circle share.svg'],
+  Money_arrows: ['Money/Icon.svg','Money/Icon-1.svg','Money/Icon-2.svg','Money/Icon-5.svg','Money/Icon-6.svg','Money/Icon-9.svg','Money/Icon-10.svg','Money/Icon-12.svg','Money/Icon-13.svg','Money/Icon-14.svg','Money/Icon-17.svg','Money/Icon-19.svg'],
+};
+const html = Object.entries(sets).map(([f,list]) =>
+  `<h2>${f}</h2>` + list.map(n=>{
+    const path = f === 'Interface' ? `./DLS-Icons/Interface/${n}` : `./DLS-Icons/${n}`;
+    return `<div class="cell"><img src="${path}" />${n.replace('.svg','')}</div>`;
+  }).join('')
+).join('');
+document.body.innerHTML += html;
+</script>
+</body></html>
